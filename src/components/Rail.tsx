@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import ProductCard from './ProductCard';
 import type { Product } from '../data/catalog';
-import { useLightWave } from '../hooks';
+import { delay, useLightWave } from '../hooks';
 
 /** Carrusel horizontal de productos con scroll nativo. */
 export default function Rail({ items, label }: { items: Product[]; label: string }) {
@@ -16,8 +16,8 @@ export default function Rail({ items, label }: { items: Product[]; label: string
   return (
     <div className="rail">
       <ul className="rail__track" ref={track} aria-label={label}>
-        {items.map((p) => (
-          <li key={p.slug}>
+        {items.map((p, i) => (
+          <li key={p.slug} data-reveal style={delay(Math.min(i, 5) * 90)}>
             <ProductCard product={p} />
           </li>
         ))}

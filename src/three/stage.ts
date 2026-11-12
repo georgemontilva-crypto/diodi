@@ -21,6 +21,8 @@ export interface StageOptions {
   explode?: number;
   /** Permite girar arrastrando. */
   interactive?: boolean;
+  /** Giro inicial de la tornamesa (rad). Por defecto, el del modelo. */
+  azimuth?: number;
   /** Giro automático en rad/s mientras nadie toca. */
   autoRotate?: number;
   /** Multiplicador de distancia de cámara (<1 acerca). */
@@ -68,7 +70,9 @@ export class Stage {
     private opts: StageOptions,
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // En teléfonos (pantallas 3x) se limita la densidad: mismo aspecto, mucho menos trabajo por cuadro.
+    const cap = opts.still ? 2 : window.matchMedia('(hover: none)').matches ? 1.6 : 2;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -101,7 +105,7 @@ export class Stage {
     this.state.power = this.target.power = opts.power ?? 0;
     this.state.tilt = this.target.tilt = opts.tilt ?? 0;
     this.state.explode = this.target.explode = opts.explode ?? 0;
-    this.az = this.target.az = this.lamp.azimuth;
+    this.az = this.target.az = opts.azimuth ?? this.lamp.azimuth;
 
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(canvas);
@@ -340,7 +344,7 @@ export class Stage {
       Math.abs(t.zoom - this.zoom) < 0.001 &&
       Math.abs(this.polarOffset - this.polar) < 0.0008 &&
       Math.abs(s.color.r - t.color.r) + Math.abs(s.color.g - t.color.g) + Math.abs(s.color.b - t.color.b) < 0.004;
-    return !settled || !!spin || !!this.pointers.size || !!this.opts.onFrame;
+    return !settled || !!spin || !!this.pointers.size;
   }
 
   private draw() {

@@ -6,7 +6,7 @@ import { categories } from '../data/catalog';
 export default function Footer() {
   return (
     <footer className="footer">
-      <div className="wrap footer__grid">
+      <div className="wrap footer__grid" data-reveal>
         <div className="footer__brand">
           <Logo size={44} title="DIODI" />
           <p className="footer__name">DIODI LED</p>

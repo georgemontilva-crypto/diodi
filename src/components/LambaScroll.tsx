@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Stage3D from './Stage3D';
+import Stage3D, { type Stage3DHandle } from './Stage3D';
 import type { Stage } from '../three/stage';
 
 const SPECS: [string, string][] = [
@@ -24,6 +24,8 @@ export default function LambaScroll() {
   const labels = useRef<(HTMLDivElement | null)[]>([]);
   const progress = useRef(0);
   const pt = useRef({ x: 0, y: 0 });
+  const stageRef = useRef<Stage3DHandle>(null);
+  const sync = useRef<() => void>(() => {});
 
   useEffect(() => {
     const update = () => {
@@ -32,6 +34,12 @@ export default function LambaScroll() {
       const r = el.getBoundingClientRect();
       const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
       progress.current = p;
+      // Solo se redibuja cuando el scroll cambia algo.
+      const stage = stageRef.current?.stage;
+      if (stage) {
+        stage.setExplode(smooth(0.08, 0.42, p) * (1 - smooth(0.66, 0.86, p)), true);
+        stage.setAzimuth(0.4 + p * 2.6);
+      }
       if (intro.current) {
         const o = 1 - smooth(0.05, 0.2, p);
         intro.current.style.opacity = String(o);
@@ -43,6 +51,7 @@ export default function LambaScroll() {
         outro.current.style.visibility = o < 0.01 ? 'hidden' : 'visible';
       }
     };
+    sync.current = update;
     update();
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
@@ -54,8 +63,6 @@ export default function LambaScroll() {
 
   const onFrame = useCallback((stage: Stage) => {
     const p = progress.current;
-    stage.setExplode(smooth(0.08, 0.42, p) * (1 - smooth(0.66, 0.86, p)), true);
-    stage.setAzimuth(0.4 + p * 2.6);
     const show = smooth(0.3, 0.42, p) * (1 - smooth(0.62, 0.7, p));
     stage.lamp.anchors?.forEach((a, i) => {
       const el = labels.current[i];
@@ -79,6 +86,8 @@ export default function LambaScroll() {
     <section className="lamba" ref={section} aria-labelledby="lamba-titulo">
       <div className="lamba__sticky">
         <Stage3D
+          ref={stageRef}
+          onReady={() => sync.current()}
           className="lamba__stage"
           label="Despiece del downlight Lamba: aro de montaje, disipador, LED, óptica y aro embellecedor"
           options={{ model: 'lamba', ghost: null, power: 1, autoRotate: 0, distance: 1.02, onFrame }}

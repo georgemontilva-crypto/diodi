@@ -6,8 +6,21 @@ import { bySlug, type ModelId } from '../data/catalog';
 declare global {
   interface Window {
     __stageReady?: boolean;
-    __capture?: (quality?: number) => string;
+    __capture?: (quality?: number, scale?: number) => string;
   }
+}
+
+/** Exporta el canvas reducido `scale` veces: dibujar al doble y reducir suaviza los bordes. */
+function exportCanvas(source: HTMLCanvasElement, quality: number, scale: number) {
+  if (scale <= 1) return source.toDataURL('image/webp', quality);
+  const out = document.createElement('canvas');
+  out.width = Math.round(source.width / scale);
+  out.height = Math.round(source.height / scale);
+  const g = out.getContext('2d')!;
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(source, 0, 0, out.width, out.height);
+  return out.toDataURL('image/webp', quality);
 }
 
 /**
@@ -42,9 +55,9 @@ export default function Studio() {
         });
         requestAnimationFrame(() =>
           requestAnimationFrame(() => {
-            window.__capture = (quality = 0.88) => {
+            window.__capture = (quality = 0.88, scale = 1) => {
               stage?.renderStill();
-              return canvas.current!.toDataURL('image/webp', quality);
+              return exportCanvas(canvas.current!, quality, scale);
             };
             stage?.renderStill();
             window.__stageReady = true;
@@ -73,9 +86,9 @@ export default function Studio() {
         requestAnimationFrame(() => {
           stage?.renderStill();
           // Dibuja y exporta en el mismo tick para leer el canvas sin conservar el búfer.
-          window.__capture = (quality = 0.88) => {
+          window.__capture = (quality = 0.88, scale = 1) => {
             stage?.renderStill();
-            return canvas.current!.toDataURL('image/webp', quality);
+            return exportCanvas(canvas.current!, quality, scale);
           };
           window.__stageReady = true;
         }),

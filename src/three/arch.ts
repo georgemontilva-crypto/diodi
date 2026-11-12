@@ -580,6 +580,8 @@ export class ArchStage {
   private visible = true;
   private disposed = false;
   private reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** Teléfonos y tabletas: sin cursor no hay paralaje, y se dibuja solo cuando algo cambia. */
+  private touch = window.matchMedia('(hover: none)').matches;
   private size = { w: 1, h: 1 };
   private split: number;
   private splitTarget: number;
@@ -594,7 +596,7 @@ export class ArchStage {
     private opts: ArchOptions,
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, opts.still ? 2 : this.touch ? 1.5 : 1.75));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
@@ -620,12 +622,20 @@ export class ArchStage {
       if (this.visible) this.start();
     });
     this.io.observe(canvas);
-    if (opts.parallax && window.matchMedia('(hover: hover)').matches)
-      window.addEventListener('pointermove', this.onPointer, { passive: true });
+    if (opts.parallax && !this.touch) window.addEventListener('pointermove', this.onPointer, { passive: true });
     document.addEventListener('visibilitychange', this.onVisibility);
     this.resize();
-    if (opts.still) this.renderStill();
-    else this.start();
+    if (opts.still) {
+      this.renderStill();
+      return;
+    }
+    // Precalienta los dos pases (compila shaders y sombras) ahora, con la pantalla de carga aún puesta,
+    // para que la primera vez que entra la luz no haya tirón.
+    const split = this.split;
+    this.split = 0.5;
+    this.draw();
+    this.split = split;
+    this.start();
   }
 
   /** Crea la versión "plano" de cada pieza: relleno oscuro que tapa y aristas claras. */
@@ -724,7 +734,7 @@ export class ArchStage {
     this.look.x += (this.pointer.x - this.look.x) * k(2.5);
     this.look.y += (this.pointer.y - this.look.y) * k(2.5);
     this.draw();
-    const drifting = !this.reduced && !!this.opts.parallax;
+    const drifting = !this.reduced && !this.touch && !!this.opts.parallax;
     const settled = Math.abs(this.splitTarget - this.split) < 0.0005 && Math.abs(this.powerTarget - this.power) < 0.0005;
     if (!this.raf && this.visible && !document.hidden && (drifting || !settled)) this.raf = requestAnimationFrame(this.frame);
   };
@@ -734,7 +744,7 @@ export class ArchStage {
     const narrow = this.opts.view ? this.opts.view === 'narrow' : w / h < 0.9;
     const v = narrow ? this.built.narrow : this.built.wide;
     // Respiración lenta más el cursor: suficiente para sentir profundidad.
-    const sway = this.opts.parallax && !this.reduced ? Math.sin(this.clock * 0.22) * 0.35 : 0;
+    const sway = this.opts.parallax && !this.reduced && !this.touch ? Math.sin(this.clock * 0.22) * 0.35 : 0;
     this.camera.fov = v.fov;
     this.camera.position.set(v.pos[0] + this.look.x * 1.1 + sway, v.pos[1] - this.look.y * 0.45, v.pos[2]);
     this.camera.lookAt(v.target[0], v.target[1], v.target[2]);

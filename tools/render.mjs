@@ -64,11 +64,12 @@ const browser = await chromium.launch({
 });
 for (const job of jobs) {
   if (only && !only.some((o) => job.name.startsWith(o))) continue;
-  const page = await browser.newPage({ viewport: { width: job.w, height: job.h }, deviceScaleFactor: 1 });
+  // Se dibuja al doble de resolución y se reduce al exportar: bordes suaves sin depender del antialiasing del equipo.
+  const page = await browser.newPage({ viewport: { width: job.w, height: job.h }, deviceScaleFactor: 2 });
   page.on('pageerror', (e) => console.log('[error]', e.message));
   await page.goto(`${base}/studio?${job.query}`);
   await page.waitForFunction(() => window.__stageReady === true, null, { timeout: 90000 });
-  const data = await page.evaluate(() => window.__capture(0.88));
+  const data = await page.evaluate(() => window.__capture(0.9, 2));
   writeFileSync(path.join(out, `${job.name}.webp`), Buffer.from(data.split(',')[1], 'base64'));
   console.log('✓', job.name);
   await page.close();

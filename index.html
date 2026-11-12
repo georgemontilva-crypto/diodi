@@ -15,7 +15,10 @@
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
-      /* Pantalla de carga: el isotipo de DIODI con sus triángulos en movimiento. */
+      /* Pantalla de carga: el isotipo de DIODI con sus triángulos en movimiento.
+         Cada triángulo es una capa propia animada solo con transform y opacity:
+         la mueve el compositor del navegador, así que no se traba aunque el hilo
+         principal esté ocupado montando el 3D. */
       html {
         background: #0d0a07;
       }
@@ -26,81 +29,92 @@
         display: grid;
         place-content: center;
         justify-items: center;
-        gap: 0;
         background: #0d0a07;
         color: #efe6d5;
         font-family: 'Montserrat Variable', 'Helvetica Neue', Arial, sans-serif;
+        will-change: opacity;
         transition:
           opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
           visibility 0s 1s;
       }
-      #loader svg {
+      .ld-mark {
+        position: relative;
         width: 104px;
-        height: auto;
-        overflow: visible;
-        transition: transform 0.95s cubic-bezier(0.7, 0, 0.84, 0);
+        height: 93.6px;
         transform-origin: 50% 66%;
+        will-change: transform;
+        transition: transform 0.95s cubic-bezier(0.7, 0, 0.84, 0);
+      }
+      .ld-mark svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        will-change: transform, opacity;
+        backface-visibility: hidden;
       }
       .ld-outer,
       .ld-inner {
-        stroke-dasharray: 1;
-        stroke-dashoffset: 1;
-        animation: ld-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        opacity: 0;
+        transform: scale(0.86);
+        transform-origin: 50% 62%;
+        animation: ld-pop 1s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
       }
-      .ld-inner {
-        animation-delay: 0.35s;
-        animation-duration: 0.9s;
+      .ld-mark .ld-inner {
+        animation-delay: 0.3s;
       }
       .ld-rise {
+        position: absolute;
+        inset: 0;
         opacity: 0;
-        animation: ld-in 0.6s ease 0.9s forwards;
+        will-change: opacity;
+        animation: ld-in 0.7s ease 0.75s forwards;
       }
-      .ld-rise path {
-        vector-effect: non-scaling-stroke;
-        stroke-width: 1.15px;
-        transform-origin: 50px 77px;
-        animation: ld-rise 2.6s linear infinite;
+      .ld-rise svg {
+        transform-origin: 50% 85.556%;
+        animation: ld-rise 2.6s linear infinite both;
         animation-delay: calc(var(--i) * -0.52s);
       }
       #loader p {
         margin: 0;
         opacity: 0;
-        animation: ld-up 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        will-change: transform, opacity;
+        animation: ld-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
-      .ld-word {
-        margin-top: 30px !important;
+      #loader .ld-word {
+        margin-top: 30px;
         padding-left: 0.5em;
         font-weight: 600;
         font-size: 17px;
         letter-spacing: 0.5em;
-        animation-delay: 0.55s !important;
+        animation-delay: 0.5s;
       }
-      .ld-sig {
-        margin-top: 12px !important;
+      #loader .ld-sig {
+        margin-top: 12px;
         padding-left: 0.46em;
         font-weight: 500;
         font-size: 10px;
         letter-spacing: 0.46em;
         text-transform: uppercase;
         color: rgba(239, 230, 213, 0.6);
-        animation-delay: 0.85s !important;
+        animation-delay: 0.8s;
       }
       #loader.is-leaving {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
       }
-      #loader.is-leaving svg {
+      #loader.is-leaving .ld-mark {
         transform: scale(16);
       }
       #loader.is-leaving p {
-        transition: opacity 0.25s;
-        opacity: 0 !important;
-        animation: none;
+        animation: ld-out 0.25s ease forwards;
       }
-      @keyframes ld-draw {
+      @keyframes ld-pop {
         to {
-          stroke-dashoffset: 0;
+          opacity: 1;
+          transform: none;
         }
       }
       @keyframes ld-in {
@@ -111,16 +125,24 @@
       @keyframes ld-up {
         from {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translate3d(0, 10px, 0);
         }
         to {
           opacity: 1;
           transform: none;
         }
       }
+      @keyframes ld-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
       @keyframes ld-rise {
         0% {
-          transform: scaleY(0.06);
+          transform: scale3d(1, 0.06, 1);
           opacity: 0;
         }
         14% {
@@ -130,57 +152,67 @@
           opacity: 0.95;
         }
         100% {
-          transform: scaleY(1);
+          transform: scale3d(1, 1, 1);
           opacity: 0;
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .ld-outer,
-        .ld-inner {
-          animation: none;
-          stroke-dashoffset: 0;
-        }
-        .ld-rise {
-          animation: none;
-          opacity: 1;
-        }
-        .ld-rise path {
-          animation: none;
-          transform: scaleY(calc(0.2 + var(--i) * 0.18));
-        }
+        .ld-mark .ld-outer,
+        .ld-mark .ld-inner,
+        .ld-rise,
         #loader p {
           animation: none;
           opacity: 1;
+          transform: none;
         }
-        #loader svg {
+        .ld-rise svg {
+          animation: none;
+          opacity: 0.9;
+          transform: scale3d(1, calc(0.2 + var(--i) * 0.18), 1);
+        }
+        .ld-mark {
           transition: none;
         }
-        #loader.is-leaving svg {
+        #loader.is-leaving .ld-mark {
           transform: none;
         }
       }
     </style>
-    <noscript
-      ><style>
+    <noscript>
+      <style>
         #loader {
           display: none;
         }
-      </style></noscript
-    >
+      </style>
+    </noscript>
   </head>
   <body>
     <div id="loader" role="status" aria-label="Cargando DIODI">
-      <svg viewBox="0 0 100 90" fill="none" stroke="currentColor" aria-hidden="true">
-        <path class="ld-outer" pathLength="1" d="M50 5 96 85H4Z" stroke-width="5.5" />
-        <path class="ld-inner" pathLength="1" d="M50 27 79.5 77h-59Z" stroke-width="2.6" />
-        <g class="ld-rise">
-          <path style="--i: 0" d="M20.5 77 50 27 79.5 77" />
-          <path style="--i: 1" d="M20.5 77 50 27 79.5 77" />
-          <path style="--i: 2" d="M20.5 77 50 27 79.5 77" />
-          <path style="--i: 3" d="M20.5 77 50 27 79.5 77" />
-          <path style="--i: 4" d="M20.5 77 50 27 79.5 77" />
-        </g>
-      </svg>
+      <div class="ld-mark" aria-hidden="true">
+        <svg class="ld-outer" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="5.5">
+          <path d="M50 5 96 85H4Z" />
+        </svg>
+        <svg class="ld-inner" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="2.6">
+          <path d="M50 27 79.5 77h-59Z" />
+        </svg>
+        <div class="ld-rise">
+          <svg style="--i: 0" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path d="M20.5 77 50 27 79.5 77" />
+          </svg>
+          <svg style="--i: 1" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path d="M20.5 77 50 27 79.5 77" />
+          </svg>
+          <svg style="--i: 2" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path d="M20.5 77 50 27 79.5 77" />
+          </svg>
+          <svg style="--i: 3" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path d="M20.5 77 50 27 79.5 77" />
+          </svg>
+          <svg style="--i: 4" viewBox="0 0 100 90" fill="none" stroke="currentColor" stroke-width="1.25">
+            <path d="M20.5 77 50 27 79.5 77" />
+          </svg>
+        </div>
+      </div>
       <p class="ld-word">DIODI</p>
       <p class="ld-sig">Light of things</p>
     </div>
@@ -189,6 +221,7 @@
       setTimeout(function () {
         var el = document.getElementById('loader');
         if (el) el.classList.add('is-leaving');
+        document.documentElement.classList.add('is-ready');
       }, 12000);
     </script>
     <div id="root"></div>

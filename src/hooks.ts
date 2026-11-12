@@ -1,4 +1,7 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState, type CSSProperties, type RefObject } from 'react';
+
+/** Retraso de aparición para elementos con `data-reveal` (escalonar una fila, por ejemplo). */
+export const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties;
 
 export function useTitle(title: string) {
   useEffect(() => {

@@ -10,7 +10,7 @@ import Rail from '../components/Rail';
 import Locations from '../components/Locations';
 import ContactLink from '../components/ContactLink';
 import { products } from '../data/catalog';
-import { useMedia, useTitle } from '../hooks';
+import { delay, useMedia, useTitle } from '../hooks';
 
 /** Posición final del divisor tras la entrada: queda justo a la derecha del titular. */
 const REST = { wide: 0.43, narrow: 0.3 };
@@ -111,18 +111,22 @@ export default function Home() {
 
       <section className="manifesto">
         <div className="wrap">
-          <p className="signature">Light of things</p>
-          <h2>Estilo, diseño y asesoría en iluminación.</h2>
+          <p className="signature" data-reveal>
+            Light of things
+          </p>
+          <h2 data-reveal style={delay(90)}>
+            Estilo, diseño y asesoría en iluminación.
+          </h2>
           <div className="manifesto__cols">
-            <div>
+            <div data-reveal>
               <h3>Estilo</h3>
               <p>Piezas que se ven bien apagadas y mejor encendidas.</p>
             </div>
-            <div>
+            <div data-reveal style={delay(120)}>
               <h3>Diseño</h3>
               <p>Cada luminaria se elige por el efecto que deja en el espacio, no solo por su forma.</p>
             </div>
-            <div>
+            <div data-reveal style={delay(240)}>
               <h3>Asesoría</h3>
               <p>Te ayudamos a decidir qué luz va en cada ambiente, por dentro y por fuera.</p>
             </div>
@@ -131,7 +135,7 @@ export default function Home() {
       </section>
 
       <section className="collection" aria-labelledby="coleccion-titulo">
-        <div className="wrap collection__head">
+        <div className="wrap collection__head" data-reveal>
           <h2 id="coleccion-titulo">Enciende cada pieza.</h2>
           <Link className="link" to="/catalogo">
             Ver todo el catálogo
@@ -146,7 +150,7 @@ export default function Home() {
 
       <section className="advisory" id="asesoria" aria-labelledby="asesoria-titulo">
         <div className="wrap advisory__grid">
-          <div className="advisory__text">
+          <div className="advisory__text" data-reveal>
             <h2 id="asesoria-titulo">Del plano a la luz encendida.</h2>
             <p>
               Cuéntanos cómo es el espacio. Te proponemos qué luminaria poner, dónde y con qué tono, para que la luz acompañe la
@@ -160,7 +164,7 @@ export default function Home() {
               Pedir asesoría
             </ContactLink>
           </div>
-          <figure className="advisory__media">
+          <figure className="advisory__media" data-reveal style={delay(160)}>
             <Compare
               name="escena-fachada"
               alt="Fachada de una casa de noche iluminada con apliques, bañadores y tiras LED en los escalones"
@@ -173,7 +177,9 @@ export default function Home() {
 
       <section className="visit" aria-labelledby="visita-titulo">
         <div className="wrap">
-          <h2 id="visita-titulo">La luz se entiende mejor en persona.</h2>
+          <h2 id="visita-titulo" data-reveal>
+            La luz se entiende mejor en persona.
+          </h2>
           <Locations />
         </div>
       </section>

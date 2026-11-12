@@ -8,7 +8,12 @@ export function dismissLoader(): Promise<void> {
   if (leaving) return leaving;
   leaving = new Promise((resolve) => {
     const el = document.getElementById('loader');
-    if (!el) return resolve();
+    // `is-ready` da la salida a las animaciones de entrada: nada se anima tapado por la pantalla de carga.
+    const ready = () => document.documentElement.classList.add('is-ready');
+    if (!el) {
+      ready();
+      return resolve();
+    }
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let seen = false;
     try {
@@ -22,6 +27,7 @@ export function dismissLoader(): Promise<void> {
     window.setTimeout(
       () => {
         el.classList.add('is-leaving');
+        window.setTimeout(ready, reduced ? 0 : 260);
         window.setTimeout(resolve, reduced ? 0 : 320);
         window.setTimeout(() => el.remove(), reduced ? 250 : 1000);
       },

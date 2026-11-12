@@ -5,7 +5,7 @@ import ContactLink from '../components/ContactLink';
 import Rail from '../components/Rail';
 import NotFound from './NotFound';
 import { bySlug, categoryOf, products, type Product as ProductData } from '../data/catalog';
-import { useTitle } from '../hooks';
+import { delay, useTitle } from '../hooks';
 
 export default function Product() {
   const { slug = '' } = useParams();
@@ -196,7 +196,7 @@ function ProductView({ product }: { product: ProductData }) {
 
       <section className="detail">
         <div className="wrap detail__grid">
-          <div className="detail__text">
+          <div className="detail__text" data-reveal>
             <h2>{product.summary}</h2>
             <p>{product.description}</p>
             <ContactLink className="btn btn--umber" message={`Hola DIODI, quiero información sobre ${product.name}.`}>
@@ -204,8 +204,8 @@ function ProductView({ product }: { product: ProductData }) {
             </ContactLink>
           </div>
           <dl className="specs">
-            {product.specs.map(([k, v]) => (
-              <div key={k}>
+            {product.specs.map(([k, v], i) => (
+              <div key={k} data-reveal style={delay(80 + i * 55)}>
                 <dt>{k}</dt>
                 <dd>{v}</dd>
               </div>
@@ -217,15 +217,15 @@ function ProductView({ product }: { product: ProductData }) {
       {product.photos.length > 0 && (
         <section className="gallery" aria-label={`Fotos de ${product.name}`}>
           <div className={`wrap gallery__grid gallery__grid--${Math.min(3, product.photos.length)}`}>
-            {product.photos.map((ph) => (
-              <img key={ph.src} src={ph.src} alt={ph.alt} loading="lazy" />
+            {product.photos.map((ph, i) => (
+              <img key={ph.src} src={ph.src} alt={ph.alt} loading="lazy" data-reveal style={delay(i * 130)} />
             ))}
           </div>
         </section>
       )}
 
       <section className="collection collection--more" aria-labelledby="mas-titulo">
-        <div className="wrap collection__head">
+        <div className="wrap collection__head" data-reveal>
           <h2 id="mas-titulo">Sigue encendiendo.</h2>
           <Link className="link" to="/catalogo">
             Ver todo el catálogo

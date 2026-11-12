@@ -1,14 +1,14 @@
 import Locations from '../components/Locations';
 import { site } from '../config';
-import { useTitle } from '../hooks';
+import { delay, useTitle } from '../hooks';
 
 export default function Contact() {
   useTitle('Ubicaciones y contacto — DIODI LED');
   return (
     <div className="contact">
       <div className="wrap">
-        <h1>Hablemos de tu espacio.</h1>
-        <p className="contact__lead">
+        <h1 data-reveal>Hablemos de tu espacio.</h1>
+        <p className="contact__lead" data-reveal style={delay(100)}>
           Ven con un plano, unas fotos o solo la idea. Te ayudamos a elegir la luz para cada ambiente, por dentro y por fuera.
         </p>
         {(site.whatsapp || site.instagram) && (
@@ -35,7 +35,7 @@ export default function Contact() {
             )}
           </div>
         )}
-        <h2>Dónde estamos</h2>
+        <h2 data-reveal>Dónde estamos</h2>
         <Locations />
       </div>
     </div>

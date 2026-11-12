@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { categories, products, type CategoryId } from '../data/catalog';
-import { useLightWave, useTitle } from '../hooks';
+import { delay, useLightWave, useTitle } from '../hooks';
 
 export default function Catalog() {
   useTitle('Catálogo — DIODI LED');
@@ -18,9 +18,11 @@ export default function Catalog() {
   return (
     <div className="catalog">
       <header className="wrap catalog__head">
-        <h1>Catálogo</h1>
-        <p>Cada pieza se puede girar, encender y probar en 3D.</p>
-        <div className="filters" role="group" aria-label="Filtrar por tipo">
+        <h1 data-reveal>Catálogo</h1>
+        <p data-reveal style={delay(90)}>
+          Cada pieza se puede girar, encender y probar en 3D.
+        </p>
+        <div className="filters" role="group" aria-label="Filtrar por tipo" data-reveal style={delay(180)}>
           <button type="button" aria-pressed={!active} onClick={() => select(null)}>
             Todo
           </button>
@@ -34,12 +36,14 @@ export default function Catalog() {
       <div className="wrap">
         <ul className="grid" ref={grid}>
           {list.map((p, i) => (
-            <li key={p.slug}>
+            <li key={p.slug} data-reveal style={delay((i % 3) * 100 + 120)}>
               <ProductCard product={p} eager={i < 3} />
             </li>
           ))}
         </ul>
-        <p className="catalog__note">¿Buscas algo que no está aquí? Tenemos más piezas en Valencia y Caracas.</p>
+        <p className="catalog__note" data-reveal>
+          ¿Buscas algo que no está aquí? Tenemos más piezas en Valencia y Caracas.
+        </p>
       </div>
     </div>
   );

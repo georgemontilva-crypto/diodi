@@ -5,6 +5,9 @@ import '@fontsource-variable/montserrat';
 import '@fontsource-variable/dm-sans';
 import './styles.css';
 import App from './App';
+import { initReveal } from './reveal';
+
+initReveal();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
