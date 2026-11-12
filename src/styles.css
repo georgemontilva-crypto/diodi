@@ -993,13 +993,21 @@ button {
 @media (max-width: 860px) {
   .lamba__intro {
     justify-content: flex-start;
-    padding-top: calc(var(--nav-h) + 40px);
+    padding-top: calc(var(--nav-h) + 28px);
+  }
+
+  .lamba__intro p {
+    max-width: 19rem;
+    margin-top: 14px;
   }
 
   .lamba__outro {
     flex-direction: column;
     align-items: flex-start;
     gap: 22px;
+    padding-top: 56px;
+    /* Fondo propio: la mancha de luz del suelo no debe cruzarse con las cifras. */
+    background: linear-gradient(to top, rgba(13, 10, 7, 0.97) 68%, rgba(13, 10, 7, 0));
   }
 
   .lamba__specs {

@@ -39,6 +39,13 @@ export default function LambaScroll() {
       if (stage) {
         stage.setExplode(smooth(0.08, 0.42, p) * (1 - smooth(0.66, 0.86, p)), true);
         stage.setAzimuth(0.4 + p * 2.6);
+        // Mientras se lee la introducción, la pieza se aparta del texto: baja en teléfono,
+        // se corre a la derecha en pantallas medianas. Vuelve al centro al empezar el despiece.
+        const aside = 1 - smooth(0.03, 0.2, p);
+        const w = window.innerWidth;
+        // Al final, en teléfono sube un poco para dejar sitio a las cifras.
+        const lift = smooth(0.8, 0.95, p);
+        stage.setShift(w <= 860 ? [0, 0.19 * aside - 0.1 * lift] : w < 1320 ? [0.13 * aside, 0] : [0, 0]);
       }
       if (intro.current) {
         const o = 1 - smooth(0.05, 0.2, p);

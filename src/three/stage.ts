@@ -64,6 +64,7 @@ export class Stage {
   private pinch = 0;
   private touched = 0;
   private lastPower = -1;
+  private dirty = false;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -290,17 +291,30 @@ export class Stage {
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
-    const [sx, sy] = this.opts.shift ?? [0, 0];
-    if (sx || sy) this.camera.setViewOffset(w, h, -sx * w, -sy * h, w, h);
-    else this.camera.clearViewOffset();
-    this.camera.updateProjectionMatrix();
+    this.applyShift();
     if (this.opts.still) this.renderStill();
     else this.start();
   }
 
+  private applyShift() {
+    const { w, h } = this.size;
+    const [sx, sy] = this.opts.shift ?? [0, 0];
+    if (sx || sy) this.camera.setViewOffset(w, h, -sx * w, -sy * h, w, h);
+    else this.camera.clearViewOffset();
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** Desplaza el encuadre (fracción del ancho y del alto). Barato: se puede llamar en cada paso de scroll. */
   setShift(shift: [number, number]) {
+    const [x, y] = this.opts.shift ?? [0, 0];
+    if (Math.abs(x - shift[0]) < 0.0005 && Math.abs(y - shift[1]) < 0.0005) return;
     this.opts.shift = shift;
-    this.resize();
+    this.applyShift();
+    if (this.opts.still) this.renderStill();
+    else {
+      this.dirty = true;
+      this.start();
+    }
   }
 
   private start() {
@@ -344,7 +358,9 @@ export class Stage {
       Math.abs(t.zoom - this.zoom) < 0.001 &&
       Math.abs(this.polarOffset - this.polar) < 0.0008 &&
       Math.abs(s.color.r - t.color.r) + Math.abs(s.color.g - t.color.g) + Math.abs(s.color.b - t.color.b) < 0.004;
-    return !settled || !!spin || !!this.pointers.size;
+    const dirty = this.dirty;
+    this.dirty = false;
+    return !settled || !!spin || !!this.pointers.size || dirty;
   }
 
   private draw() {
