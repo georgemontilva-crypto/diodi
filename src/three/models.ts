@@ -343,7 +343,10 @@ function pendant(kind: 'disc' | 'dome'): Lamp {
   root.add(shade);
 
   // Cable y portalámparas.
-  root.add(at(mesh(new THREE.CylinderGeometry(0.006, 0.006, 6, 8), body, false), 0, hang + top + 3, 0));
+  const cord = at(mesh(new THREE.CylinderGeometry(0.006, 0.006, 6, 8), body, false), 0, hang + top + 3, 0);
+  cord.name = 'cord';
+  cord.userData.from = hang + top;
+  root.add(cord);
   root.add(at(mesh(new THREE.CylinderGeometry(0.03, 0.022, 0.07, 20), body, false), 0, hang + top + 0.03, 0));
   const bulbY = hang + (kind === 'disc' ? 0.06 : 0.3);
   root.add(at(mesh(new THREE.CylinderGeometry(0.026, 0.03, 0.09, 20), bodyMaterial('blanco'), false), 0, bulbY + 0.085, 0));

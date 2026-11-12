@@ -52,6 +52,12 @@ for (const [id, hex] of [
   });
 }
 
+// Escenarios arquitectónicos: cada uno en luz y en plano (comparador de Asesoría y respaldo del hero).
+for (const scene of ['interior', 'fachada']) {
+  jobs.push({ name: `escena-${scene}-luz`, w: 1600, h: 1000, query: `arch=${scene}&split=0&view=wide` });
+  jobs.push({ name: `escena-${scene}-plano`, w: 1600, h: 1000, query: `arch=${scene}&split=1&view=wide` });
+}
+
 const browser = await chromium.launch({
   channel: 'chrome',
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],

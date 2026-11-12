@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Stage3D, { type Stage3DHandle } from '../components/Stage3D';
+import Plan3D, { type Plan3DHandle } from '../components/Plan3D';
+import SplitHandle from '../components/SplitHandle';
+import Compare from '../components/Compare';
+import { dismissLoader } from '../loader';
 import LambaScroll from '../components/LambaScroll';
 import ToneDemo from '../components/ToneDemo';
 import Rail from '../components/Rail';
@@ -9,50 +12,74 @@ import ContactLink from '../components/ContactLink';
 import { products } from '../data/catalog';
 import { useMedia, useTitle } from '../hooks';
 
-const HERO_SHIFT = { wide: [0.18, -0.03] as [number, number], narrow: [0, -0.13] as [number, number] };
+/** Posición final del divisor tras la entrada: queda justo a la derecha del titular. */
+const REST = { wide: 0.43, narrow: 0.3 };
+const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 function Hero() {
-  const root = useRef<HTMLElement>(null);
-  const stage = useRef<Stage3DHandle>(null);
-  const [on, setOn] = useState(false);
-  const [noStage, setNoStage] = useState(false);
+  const stage = useRef<Plan3DHandle>(null);
   const narrow = useMedia('(max-width: 860px)');
+  const [split, setSplit] = useState(1);
+  const [fallback, setFallback] = useState(false);
+  const tween = useRef(0);
 
-  // La página abre a oscuras y la lámpara se enciende sola.
   useEffect(() => {
-    const t = window.setTimeout(() => setOn(true), 700);
-    return () => window.clearTimeout(t);
+    stage.current?.stage?.setSplit(split, true);
+  }, [split]);
+
+  // Entrada: todo empieza como plano y la luz avanza de derecha a izquierda.
+  const enter = () => {
+    const to = narrow ? REST.narrow : REST.wide;
+    stage.current?.stage?.setPower(true);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setSplit(to);
+      return;
+    }
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / 2600);
+      setSplit(1 + (to - 1) * ease(t));
+      if (t < 1) tween.current = requestAnimationFrame(tick);
+    };
+    tween.current = requestAnimationFrame(tick);
+  };
+  const grab = () => cancelAnimationFrame(tween.current);
+
+  useEffect(() => {
+    // Si la escena tarda demasiado, no se retiene la página.
+    const safety = window.setTimeout(() => dismissLoader(), 8000);
+    return () => {
+      window.clearTimeout(safety);
+      cancelAnimationFrame(tween.current);
+    };
   }, []);
-  useEffect(() => {
-    stage.current?.stage?.setPower(on);
-    // Sin 3D (imagen de respaldo) el texto no puede esperar a la lámpara.
-    if (noStage) root.current?.style.setProperty('--lit', on ? '1' : '0.4');
-  }, [on, noStage]);
-  useEffect(() => {
-    stage.current?.stage?.setShift(narrow ? HERO_SHIFT.narrow : HERO_SHIFT.wide);
-  }, [narrow]);
 
   return (
-    <section className="hero" ref={root}>
-      <Stage3D
-        ref={stage}
-        className="hero__stage"
-        label="Lámpara de mesa Earthtone en 3D. Arrastra para girarla."
-        options={{
-          model: 'earthtone',
-          ghost: 'DIODI',
-          ghostWidth: 5.6,
-          ghostY: 1.6,
-          interactive: true,
-          autoRotate: 0.16,
-          distance: 1.1,
-          shift: narrow ? HERO_SHIFT.narrow : HERO_SHIFT.wide,
-          onPower: (p) => root.current?.style.setProperty('--lit', p.toFixed(3)),
-        }}
-        onReady={(s) => s.setPower(on)}
-        onFail={() => setNoStage(true)}
-        fallback={<img src="/renders/earthtone-on.webp" alt="Lámpara de mesa Earthtone encendida" />}
-      />
+    <section className="hero">
+      {fallback ? (
+        <Compare
+          className="hero__compare"
+          name="escena-interior"
+          alt="Sala comedor iluminada con luminarias DIODI"
+          initial={REST.wide}
+          eager
+        />
+      ) : (
+        <>
+          <Plan3D
+            ref={stage}
+            className="hero__stage"
+            label="Sala comedor en 3D: a la izquierda el plano de líneas, a la derecha el espacio iluminado con luminarias DIODI"
+            options={{ scene: 'interior', split: 1, power: 0, parallax: true }}
+            onReady={() => dismissLoader().then(enter)}
+            onFail={() => {
+              setFallback(true);
+              dismissLoader();
+            }}
+          />
+          <SplitHandle value={split} onChange={setSplit} onGrab={grab} />
+        </>
+      )}
       <div className="hero__overlay wrap">
         <div className="hero__copy">
           <h1>
@@ -70,15 +97,7 @@ function Hero() {
             </ContactLink>
           </div>
         </div>
-        <div className="hero__aside">
-          <button className="switch" type="button" role="switch" aria-checked={on} onClick={() => setOn((v) => !v)}>
-            <span className="switch__track">
-              <span className="switch__thumb" />
-            </span>
-            {on ? 'Luz encendida' : 'Luz apagada'}
-          </button>
-          <p className="hero__hint">Arrastra la lámpara para girarla</p>
-        </div>
+        <p className="hero__hint">Arrastra la línea para pasar del plano a la luz</p>
       </div>
     </section>
   );
@@ -141,22 +160,14 @@ export default function Home() {
               Pedir asesoría
             </ContactLink>
           </div>
-          <div className="advisory__media">
-            <img
-              src="/img/asesoria-interior.webp"
-              alt="Comedor a medio dibujar: el plano de líneas se convierte en el espacio iluminado"
-              loading="lazy"
-              width={960}
-              height={1383}
+          <figure className="advisory__media">
+            <Compare
+              name="escena-fachada"
+              alt="Fachada de una casa de noche iluminada con apliques, bañadores y tiras LED en los escalones"
+              initial={0.42}
             />
-            <img
-              src="/img/asesoria-fachada.webp"
-              alt="Fachada de una casa de noche, mitad en plano y mitad iluminada"
-              loading="lazy"
-              width={1125}
-              height={1138}
-            />
-          </div>
+            <figcaption>Arrastra la línea: la misma fachada, en plano y con la luz encendida.</figcaption>
+          </figure>
         </div>
       </section>
 

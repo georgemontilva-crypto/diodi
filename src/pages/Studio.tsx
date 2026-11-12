@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Stage } from '../three/stage';
+import { ArchStage, type ArchId } from '../three/arch';
 import { bySlug, type ModelId } from '../data/catalog';
 
 declare global {
@@ -13,6 +14,7 @@ declare global {
  * Escena suelta a pantalla completa, controlada por la URL. La usa tools/render.mjs
  * para generar las imágenes de public/renders.
  * Ej.: /studio?slug=midnight&power=1  ·  /studio?model=spot360&tilt=0.7&tone=e6ecff
+ * Escenarios: /studio?arch=interior&split=0  (split=1 dibuja solo el plano)
  */
 export default function Studio() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -20,7 +22,7 @@ export default function Studio() {
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     const num = (k: string) => (q.has(k) ? Number(q.get(k)) : undefined);
-    let stage: Stage | undefined;
+    let stage: Stage | ArchStage | undefined;
     let cancelled = false;
     document.body.style.background = '#0d0a07';
     document.body.style.overflow = 'hidden';
@@ -29,8 +31,29 @@ export default function Studio() {
       await document.fonts.load('800 200px "Montserrat Variable"').catch(() => {});
       await document.fonts.ready;
       if (cancelled || !canvas.current) return;
+      const arch = q.get('arch');
+      if (arch) {
+        stage = new ArchStage(canvas.current, {
+          scene: arch as ArchId,
+          split: num('split') ?? 0,
+          power: num('power') ?? 1,
+          view: (q.get('view') as 'wide' | 'narrow' | null) ?? undefined,
+          still: true,
+        });
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            window.__capture = (quality = 0.88) => {
+              stage?.renderStill();
+              return canvas.current!.toDataURL('image/webp', quality);
+            };
+            stage?.renderStill();
+            window.__stageReady = true;
+          }),
+        );
+        return;
+      }
       const product = bySlug(q.get('slug') ?? '');
-      stage = new Stage(canvas.current, {
+      const lampStage = (stage = new Stage(canvas.current, {
         model: (q.get('model') ?? product?.model ?? 'earthtone') as ModelId,
         ghost: q.has('ghost') ? q.get('ghost') : (product?.ghost ?? null),
         ghostWidth: num('ghostWidth'),
@@ -43,9 +66,9 @@ export default function Studio() {
         distance: num('distance'),
         shift: [num('sx') ?? 0, num('sy') ?? 0],
         still: true,
-      });
+      }));
       const az = num('az');
-      if (az !== undefined) stage.setAzimuth(az, true);
+      if (az !== undefined) lampStage.setAzimuth(az, true);
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           stage?.renderStill();
