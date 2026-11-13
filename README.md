@@ -21,16 +21,16 @@ El servidor (`server.js`) usa la variable `PORT` que Railway asigna.
 
 ## Dónde se cambia cada cosa
 
-| Qué                                 | Archivo               |
-| ----------------------------------- | --------------------- |
-| WhatsApp, Instagram, direcciones    | `src/config.ts`       |
-| Productos, textos y fichas técnicas | `src/data/catalog.ts` |
-| Modelos 3D (hechos por código)      | `src/three/catalog/*.ts` (por tipo) y `src/three/models.ts` |
-| Piezas comunes (ópticas, riel, aros) | `src/three/parts.ts`  |
-| Escenario, cámara y controles 3D    | `src/three/stage.ts`  |
-| Colores, tipografía y estilos       | `src/styles.css`      |
-| Fotos de producto                   | `public/img/`         |
-| Imágenes de las tarjetas (renders)  | `public/renders/`     |
+| Qué                                  | Archivo                                                     |
+| ------------------------------------ | ----------------------------------------------------------- |
+| WhatsApp, Instagram, direcciones     | `src/config.ts`                                             |
+| Productos, textos y fichas técnicas  | `src/data/catalog.ts`                                       |
+| Modelos 3D (hechos por código)       | `src/three/catalog/*.ts` (por tipo) y `src/three/models.ts` |
+| Piezas comunes (ópticas, riel, aros) | `src/three/parts.ts`                                        |
+| Escenario, cámara y controles 3D     | `src/three/stage.ts`                                        |
+| Colores, tipografía y estilos        | `src/styles.css`                                            |
+| Fotos de producto                    | `public/img/`                                               |
+| Imágenes de las tarjetas (renders)   | `public/renders/`                                           |
 
 ## Agregar un producto
 
