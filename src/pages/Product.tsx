@@ -22,7 +22,11 @@ function ProductView({ product }: { product: ProductData }) {
   const [finish, setFinish] = useState(product.finishes[0].id);
   const [tone, setTone] = useState(product.tones[0].id);
   const [tilt, setTilt] = useState(0);
+  const [pan, setPan] = useState(0);
   const [explode, setExplode] = useState(0);
+  const [variant, setVariant] = useState(product.variants?.initial ?? product.variants?.options[0].id);
+  const tiltMax = product.tiltMax ?? 90;
+  const toneColor = product.tones.find((t) => t.id === tone)?.color ?? product.tones[0].color;
   const stage = () => ref.current?.stage;
 
   // Entra apagada y se enciende sola.
@@ -37,6 +41,7 @@ function ProductView({ product }: { product: ProductData }) {
   const hasTones = product.tones.length > 1;
   const hasFinishes = product.finishes.length > 1;
   const hasTilt = product.controls.includes('tilt');
+  const hasPan = product.controls.includes('pan');
   const hasExplode = product.controls.includes('explode');
   const others = products.filter((p) => p.slug !== product.slug);
 
@@ -44,23 +49,27 @@ function ProductView({ product }: { product: ProductData }) {
     <article className="product">
       <section className="viewer" aria-label={`${product.name} en 3D`}>
         <Stage3D
+          // Cambiar de versión reconstruye el modelo.
+          key={variant ?? 'base'}
           ref={ref}
           className="viewer__stage"
           label={`Modelo 3D de ${product.name}. Arrastra para girar; usa las flechas del teclado.`}
           options={{
             model: product.model,
+            variant,
             ghost: product.ghost,
             finish,
-            tone: product.tones[0].color,
+            tone: toneColor,
             interactive: true,
-            autoRotate: hasTilt ? 0 : 0.14,
+            autoRotate: hasTilt || hasPan ? 0 : 0.14,
             shift: [0, -0.04],
           }}
           onReady={(s) => {
             s.setPower(on);
             s.setFinish(finish);
-            s.setTone(product.tones.find((t) => t.id === tone)?.color ?? product.tones[0].color);
-            s.setTilt(tilt / 90);
+            s.setTone(toneColor);
+            s.setTilt(tilt / tiltMax);
+            s.setPan(pan / 360);
             s.setExplode(explode / 100);
           }}
           fallback={<img src={`/renders/${product.slug}-on.webp`} alt={`${product.name} encendida`} />}
@@ -101,6 +110,27 @@ function ProductView({ product }: { product: ProductData }) {
               </button>
             </div>
 
+            {product.variants && (
+              <div className="dock__item">
+                <span className="dock__label" id="lbl-version">
+                  {product.variants.label}
+                </span>
+                <div className="segmented" role="radiogroup" aria-labelledby="lbl-version">
+                  {product.variants.options.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={variant === o.id}
+                      onClick={() => setVariant(o.id)}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {hasTones && (
               <div className="dock__item">
                 <span className="dock__label" id="lbl-tono">
@@ -130,7 +160,7 @@ function ProductView({ product }: { product: ProductData }) {
             {hasFinishes && (
               <div className="dock__item">
                 <span className="dock__label" id="lbl-acabado">
-                  Acabado
+                  {product.finishLabel ?? 'Acabado'}
                 </span>
                 <div className="swatches" role="radiogroup" aria-labelledby="lbl-acabado">
                   {product.finishes.map((f) => (
@@ -159,16 +189,35 @@ function ProductView({ product }: { product: ProductData }) {
                 <input
                   type="range"
                   min={0}
-                  max={90}
+                  max={tiltMax}
                   step={1}
                   value={tilt}
                   onChange={(e) => {
                     const v = Number(e.target.value);
                     setTilt(v);
-                    stage()?.setTilt(v / 90);
+                    stage()?.setTilt(v / tiltMax);
                   }}
                 />
                 <output>{tilt}°</output>
+              </label>
+            )}
+
+            {hasPan && (
+              <label className="dock__item dock__item--range">
+                <span className="dock__label">Giro</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={pan}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setPan(v);
+                    stage()?.setPan(v / 360);
+                  }}
+                />
+                <output>{pan}°</output>
               </label>
             )}
 

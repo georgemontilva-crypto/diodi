@@ -68,6 +68,9 @@ export default function Studio() {
       const product = bySlug(q.get('slug') ?? '');
       const lampStage = (stage = new Stage(canvas.current, {
         model: (q.get('model') ?? product?.model ?? 'earthtone') as ModelId,
+        variant: q.get('variant') ?? product?.variants?.initial ?? product?.variants?.options[0].id,
+        pan: num('pan'),
+        bare: q.has('bare'),
         ghost: q.has('ghost') ? q.get('ghost') : (product?.ghost ?? null),
         ghostWidth: num('ghostWidth'),
         ghostY: num('ghostY'),
@@ -82,6 +85,8 @@ export default function Studio() {
       }));
       const az = num('az');
       if (az !== undefined) lampStage.setAzimuth(az, true);
+      const zoom = num('zoom');
+      if (zoom) lampStage.zoomBy(zoom);
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           stage?.renderStill();

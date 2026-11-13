@@ -139,9 +139,9 @@ export interface FinishLook {
 }
 
 export const FINISHES: Record<string, FinishLook> = {
-  negro: { color: '#121110', roughness: 0.54, metalness: 0.3, env: 0.95 },
-  blanco: { color: '#e9e5dd', roughness: 0.62, metalness: 0.04, env: 0.3 },
-  tierra: { color: '#57402f', roughness: 0.72, metalness: 0.1, env: 0.34 },
+  negro: { color: '#141312', roughness: 0.5, metalness: 0.35, env: 2.1 },
+  blanco: { color: '#e9e5dd', roughness: 0.6, metalness: 0.04, env: 0.95 },
+  tierra: { color: '#57402f', roughness: 0.72, metalness: 0.1, env: 0.7 },
 };
 
 export function bodyMaterial(finish = 'negro', extra: THREE.MeshStandardMaterialParameters = {}) {
@@ -152,6 +152,9 @@ export function bodyMaterial(finish = 'negro', extra: THREE.MeshStandardMaterial
     metalness: f.metalness,
     envMapIntensity: f.env,
     dithering: true,
+    // Grano fino de pintura en polvo: rompe el brillo perfecto del plástico de render.
+    bumpMap: grainTexture(),
+    bumpScale: 0.55,
     ...extra,
   });
 }
@@ -220,3 +223,148 @@ export const smooth = (a: number, b: number, v: number) => {
   const t = clamp01((v - a) / (b - a));
   return t * t * (3 - 2 * t);
 };
+
+/* ───────────────────────── Realismo: texturas, materiales y estudio ───────────────────────── */
+
+/** Ruido determinista 0–1 (los renders no deben cambiar entre ejecuciones). */
+export function rand(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Grano fino para pintura en polvo y aluminio anodizado (mapa de relieve). */
+export function grainTexture(): THREE.Texture {
+  const hit = texCache.get('grain');
+  if (hit) return hit;
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(S, S);
+  const r = rand(7);
+  for (let i = 0; i < S * S; i++) {
+    const v = 110 + r() * 60 + (r() > 0.985 ? 50 : 0);
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(5, 5);
+  texCache.set('grain', t);
+  return t;
+}
+
+/** Poro grueso para piedra, yeso y cemento. */
+export function stoneTexture(): THREE.Texture {
+  const hit = texCache.get('stone');
+  if (hit) return hit;
+  const S = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#8c8c8c';
+  g.fillRect(0, 0, S, S);
+  const r = rand(19);
+  for (let i = 0; i < 9000; i++) {
+    const x = r() * S;
+    const y = r() * S;
+    const rad = 0.6 + r() * r() * 5;
+    const dark = r() > 0.45;
+    g.fillStyle = dark ? `rgba(20,20,20,${0.25 + r() * 0.5})` : `rgba(240,240,240,${0.2 + r() * 0.35})`;
+    g.beginPath();
+    g.arc(x, y, rad, 0, Math.PI * 2);
+    g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(3, 2);
+  texCache.set('stone', t);
+  return t;
+}
+
+/** Chip LED tipo COB visto de frente: fósforo amarillo sobre base cerámica. */
+export function cobTexture(): THREE.Texture {
+  const hit = texCache.get('cob');
+  if (hit) return hit;
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#d8d6d0';
+  g.fillRect(0, 0, S, S);
+  g.fillStyle = '#bdbab2';
+  g.beginPath();
+  g.arc(128, 128, 104, 0, Math.PI * 2);
+  g.fill();
+  const grad = g.createRadialGradient(128, 128, 8, 128, 128, 88);
+  grad.addColorStop(0, '#ffe38a');
+  grad.addColorStop(0.8, '#f0b93a');
+  grad.addColorStop(1, '#c98d1c');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(128, 128, 88, 0, Math.PI * 2);
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  texCache.set('cob', t);
+  return t;
+}
+
+/** Sombra de contacto: oscurece el suelo justo bajo la pieza para que "pese". */
+export function contactTexture(): THREE.Texture {
+  const hit = texCache.get('contact');
+  if (hit) return hit;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(0,0,0,0.85)');
+  grad.addColorStop(0.45, 'rgba(0,0,0,0.5)');
+  grad.addColorStop(0.75, 'rgba(0,0,0,0.14)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c);
+  texCache.set('contact', t);
+  return t;
+}
+
+/**
+ * Estudio de fotografía de producto: fondo negro y cajas de luz alargadas.
+ * Es lo que dibuja los reflejos largos y limpios sobre cilindros, aros y reflectores.
+ */
+export function studioEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture {
+  const scene = new THREE.Scene();
+  const room = new THREE.Mesh(
+    new THREE.BoxGeometry(40, 40, 40),
+    new THREE.MeshBasicMaterial({ color: '#050505', side: THREE.BackSide }),
+  );
+  scene.add(room);
+  const box = (w: number, h: number, power: number, color: string, pos: [number, number, number]) => {
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(power), side: THREE.DoubleSide });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    m.position.set(...pos);
+    m.lookAt(0, 0, 0);
+    scene.add(m);
+  };
+  box(14, 6, 2.6, '#fff4e6', [0, 13, 5]); // cenital principal
+  box(2.6, 16, 3.2, '#ffffff', [-12, 2, 5]); // tira lateral izquierda
+  box(2.2, 14, 2.0, '#ffe6c8', [12, 3, 2]); // tira lateral derecha, cálida
+  box(10, 2, 1.4, '#dfe8ff', [0, -2, -13]); // contraluz frío
+  box(7, 3, 0.7, '#ffffff', [0, -12, 4]); // rebote de suelo
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const tex = pmrem.fromScene(scene, 0.03).texture;
+  pmrem.dispose();
+  scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    m.geometry?.dispose();
+    (m.material as THREE.Material | undefined)?.dispose?.();
+  });
+  return tex;
+}

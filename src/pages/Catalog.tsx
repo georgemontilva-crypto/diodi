@@ -6,17 +6,20 @@ import { delay, useLightWave, useTitle } from '../hooks';
 
 export default function Catalog() {
   useTitle('Catálogo — DIODI LED');
-  const grid = useRef<HTMLUListElement>(null);
-  useLightWave(grid);
+  const root = useRef<HTMLDivElement>(null);
+  useLightWave(root);
   const [params, setParams] = useSearchParams();
   const raw = params.get('categoria');
   const active = categories.some((c) => c.id === raw) ? (raw as CategoryId) : null;
-  const list = active ? products.filter((p) => p.category === active) : products;
+  // Con "Todo" se muestra cada tipo en su propio bloque; con un filtro, solo ese.
+  const groups = categories
+    .filter((c) => !active || c.id === active)
+    .map((c) => ({ ...c, items: products.filter((p) => p.category === c.id) }));
 
   const select = (id: CategoryId | null) => setParams(id ? { categoria: id } : {}, { replace: true, preventScrollReset: true });
 
   return (
-    <div className="catalog">
+    <div className="catalog" ref={root}>
       <header className="wrap catalog__head">
         <h1 data-reveal>Catálogo</h1>
         <p data-reveal style={delay(90)}>
@@ -34,13 +37,21 @@ export default function Catalog() {
         </div>
       </header>
       <div className="wrap">
-        <ul className="grid" ref={grid}>
-          {list.map((p, i) => (
-            <li key={p.slug} data-reveal style={delay((i % 3) * 100 + 120)}>
-              <ProductCard product={p} eager={i < 3} />
-            </li>
-          ))}
-        </ul>
+        {groups.map((g, gi) => (
+          <section key={g.id} className="catalog__group" aria-labelledby={`tipo-${g.id}`}>
+            <div className="catalog__group-head" data-reveal>
+              <h2 id={`tipo-${g.id}`}>{g.label}</h2>
+              <p>{g.intro}</p>
+            </div>
+            <ul className="grid">
+              {g.items.map((p, i) => (
+                <li key={p.slug} data-reveal style={delay((i % 3) * 100 + 80)}>
+                  <ProductCard product={p} eager={gi === 0 && i < 3} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
         <p className="catalog__note" data-reveal>
           ¿Buscas algo que no está aquí? Tenemos más piezas en Valencia y Caracas.
         </p>

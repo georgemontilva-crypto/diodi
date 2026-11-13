@@ -1357,6 +1357,35 @@ button {
   }
 }
 
+.catalog__group + .catalog__group {
+  margin-top: clamp(72px, 9vw, 128px);
+}
+
+.catalog__group-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px 40px;
+  margin-bottom: clamp(24px, 3vw, 40px);
+  padding-top: 22px;
+  border-top: 1px solid var(--umber-line);
+}
+
+.catalog__group-head h2 {
+  font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+}
+
+.catalog__group-head p {
+  max-width: 30rem;
+  color: var(--umber-soft);
+}
+
+@media (max-width: 720px) {
+  .catalog__group-head {
+    grid-template-columns: 1fr;
+  }
+}
+
 .catalog__note {
   margin-top: clamp(56px, 7vw, 88px);
   padding-top: 24px;

@@ -312,7 +312,7 @@ class Kit {
     const level = (at: number) => smooth(at, at + 0.3, power * 1.3);
     for (const d of this.dimmers) d.fn(level(d.at));
     for (const l of this.lamps) {
-      l.lamp.apply({ power: level(l.at), color: this.tmp.copy(l.color), tilt: l.tilt, explode: 0 });
+      l.lamp.apply({ power: level(l.at), color: this.tmp.copy(l.color), tilt: l.tilt, pan: 0, explode: 0 });
     }
   };
 }

@@ -1,14 +1,20 @@
 // Escenario 3D: un estudio a oscuras donde la única luz es la de la luminaria.
-// La pieza gira sobre una tornamesa; la cámara solo sube, baja y se acerca.
+// Según el montaje, la pieza gira sobre una tornamesa o es la cámara la que orbita.
 
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import type { ModelId } from '../data/catalog';
-import { NIGHT, STUDIO, clamp01, disposeTree, ghostTexture, lerp } from './kit';
+import { NIGHT, STUDIO, clamp01, contactTexture, disposeTree, ghostTexture, lerp, studioEnvironment } from './kit';
+import { CEILING } from './lamp';
 import { buildLamp, type Lamp, type LampState } from './models';
 
 export interface StageOptions {
   model: ModelId;
+  /** Variante del modelo (número de haces, largo...). */
+  variant?: string;
   /** Texto en la pared. `null` lo oculta. */
   ghost?: string | null;
   ghostWidth?: number;
@@ -18,7 +24,10 @@ export interface StageOptions {
   tone?: string;
   power?: number;
   tilt?: number;
+  pan?: number;
   explode?: number;
+  /** Oculta el pedestal y la esfera que acompañan a los focos de techo. */
+  bare?: boolean;
   /** Permite girar arrastrando. */
   interactive?: boolean;
   /** Giro inicial de la tornamesa (rad). Por defecto, el del modelo. */
@@ -35,14 +44,23 @@ export interface StageOptions {
   onFrame?: (stage: Stage) => void;
 }
 
-const WALL_Z: Record<Lamp['env'], number> = { table: -3.2, room: -2.3, studio: -3.4 };
+const WALL_Z: Record<Lamp['env'], number> = { table: -3.2, room: -2.3, studio: -3.4, wall: 0 };
 
 export class Stage {
   readonly lamp: Lamp;
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  private composer: EffectComposer;
+  private bloom: UnrealBloomPass;
   private halo = new THREE.PointLight('#ffffff', 0, 0, 2);
+  private bounce: THREE.PointLight | null = null;
+  /** Luz de modelado: sube cuando la luminaria se apaga para que la pieza se siga leyendo. */
+  private fill: THREE.DirectionalLight | null = null;
+  private fillBase = 0;
+  private fillOff = 0.85;
+  private clock = 0;
+  private everTouched = false;
   private ghostMat: THREE.MeshStandardMaterial | null = null;
   private envTex: THREE.Texture;
   private ro: ResizeObserver;
@@ -53,8 +71,8 @@ export class Stage {
   private disposed = false;
   private reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  private state: LampState = { power: 0, color: new THREE.Color('#ffb163'), tilt: 0, explode: 0 };
-  private target = { power: 0, color: new THREE.Color('#ffb163'), tilt: 0, explode: 0, az: 0, polar: 0, zoom: 0 };
+  private state: LampState = { power: 0, color: new THREE.Color('#ffc387'), tilt: 0, pan: 0, explode: 0 };
+  private target = { power: 0, color: new THREE.Color('#ffc387'), tilt: 0, pan: 0, explode: 0, az: 0, polar: 0, zoom: 0 };
   private az = 0;
   private polar = 0;
   private polarOffset = 0;
@@ -76,17 +94,24 @@ export class Stage {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     this.scene.background = new THREE.Color(NIGHT);
     this.scene.fog = new THREE.Fog(NIGHT, 9, 24);
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmrem.dispose();
+    this.envTex = studioEnvironment(this.renderer);
 
-    this.lamp = buildLamp(opts.model);
+    // Posproceso: antialiasing por multimuestreo, resplandor real de los LED y curva de tono de cine.
+    const touch = window.matchMedia('(hover: none)').matches;
+    const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: touch && !opts.still ? 2 : 4 });
+    this.composer = new EffectComposer(this.renderer, target);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.24, 0.5, 1.3);
+    this.composer.addPass(this.bloom);
+    this.composer.addPass(new OutputPass());
+
+    this.lamp = buildLamp(opts.model, opts.variant);
     if (opts.finish) this.lamp.setFinish(opts.finish);
     this.scene.add(this.lamp.root);
     if (this.lamp.props) this.scene.add(this.lamp.props);
@@ -105,6 +130,7 @@ export class Stage {
     }
     this.state.power = this.target.power = opts.power ?? 0;
     this.state.tilt = this.target.tilt = opts.tilt ?? 0;
+    this.state.pan = this.target.pan = opts.pan ?? 0;
     this.state.explode = this.target.explode = opts.explode ?? 0;
     this.az = this.target.az = opts.azimuth ?? this.lamp.azimuth;
 
@@ -127,8 +153,10 @@ export class Stage {
 
   private buildRoom() {
     const z = WALL_Z[this.lamp.env];
+    const built = this.lamp.env === 'room' || this.lamp.env === 'wall';
     const surface = new THREE.MeshStandardMaterial({
-      color: STUDIO,
+      // Sala y pared son obra blanca; el estudio de mesa conserva el fondo cálido de la marca.
+      color: built ? '#8d8880' : STUDIO,
       roughness: 0.94,
       metalness: 0,
       envMapIntensity: 0,
@@ -154,14 +182,67 @@ export class Stage {
         envMapIntensity: 0,
       });
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, (width * 400) / 2048), this.ghostMat);
-      plane.position.set(0, this.opts.ghostY ?? this.lamp.ghost.y, z + 0.012);
+      plane.position.set(this.lamp.ghost.x ?? 0, this.opts.ghostY ?? this.lamp.ghost.y, z + 0.012);
       this.scene.add(plane);
+    }
+
+    const env = this.lamp.env;
+    if (env === 'room') {
+      // Sala: techo de yeso, y opcionalmente una pieza en pedestal para tener a qué apuntar.
+      const plaster = new THREE.MeshStandardMaterial({ color: '#a39e96', roughness: 0.95, envMapIntensity: 0, dithering: true });
+      const ceiling = new THREE.Mesh(new THREE.BoxGeometry(18, 0.3, 10), plaster);
+      ceiling.position.set(0, CEILING + 0.15, -0.6);
+      ceiling.receiveShadow = true;
+      this.scene.add(ceiling);
+      if (this.lamp.subject && !this.opts.bare) {
+        const stone = new THREE.MeshStandardMaterial({ color: '#c9c2b6', roughness: 0.82, envMapIntensity: 0, dithering: true });
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.34, 0.4), stone);
+        plinth.position.set(0, 0.17, 0);
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.17, 64, 40), stone);
+        orb.position.set(0, 0.51, 0);
+        for (const m of [plinth, orb]) {
+          m.castShadow = m.receiveShadow = true;
+          this.scene.add(m);
+        }
+      }
+      // Rebote suave: sin él, techo y luminaria quedarían negros con la luz hacia abajo.
+      this.bounce = new THREE.PointLight('#ffffff', 0, 0, 2);
+      this.bounce.position.set(0, 0.7, 1.9);
+      this.scene.add(this.bounce);
+    }
+    if (env === 'table' && this.lamp.footprint) {
+      const r = this.lamp.footprint;
+      const contact = new THREE.Mesh(
+        new THREE.PlaneGeometry(r * 2, r * 2),
+        new THREE.MeshBasicMaterial({ map: contactTexture(), transparent: true, depthWrite: false, opacity: 0.9, fog: false }),
+      );
+      contact.rotation.x = -Math.PI / 2;
+      contact.position.y = 0.004;
+      contact.renderOrder = 1;
+      this.scene.add(contact);
     }
 
     this.halo.position.set(0, this.lamp.halo.y, z + 1.7);
     this.scene.add(this.halo);
-    // Penumbra mínima para que la pieza se adivine apagada.
-    this.scene.add(new THREE.HemisphereLight('#ffe9cf', '#1a120b', 0.045));
+    // Penumbra para que la pieza se lea apagada. En sala y pared es luz fría de anochecer:
+    // deja ver la arquitectura y hace contraste con el tono cálido de la luminaria.
+    if (built) {
+      this.scene.add(new THREE.HemisphereLight('#aeb9d2', '#2a2622', 0.3));
+      const rim = new THREE.DirectionalLight('#c9d4ee', 0.35);
+      rim.position.set(-3, 2.2, 4);
+      this.scene.add(rim);
+      this.fill = rim;
+      this.fillBase = 0.35;
+      this.fillOff = 0.55;
+    } else {
+      this.scene.add(new THREE.HemisphereLight('#ffe9cf', '#1a120b', 0.06));
+      // Luz principal de estudio, muy baja: modela el volumen de la pieza sin romper la penumbra.
+      const key = new THREE.DirectionalLight('#fff1e0', 0.28);
+      key.position.set(-2.5, 4, 5);
+      this.scene.add(key);
+      this.fill = key;
+      this.fillBase = 0.28;
+    }
   }
 
   /* ── Controles públicos ── */
@@ -180,6 +261,10 @@ export class Stage {
   }
   setTilt(v: number) {
     this.target.tilt = clamp01(v);
+    this.start();
+  }
+  setPan(v: number) {
+    this.target.pan = clamp01(v);
     this.start();
   }
   setExplode(v: number, instant = false) {
@@ -235,6 +320,7 @@ export class Stage {
     this.canvas.classList.add('is-dragging');
     this.pinch = 0;
     this.touched = performance.now();
+    this.everTouched = true;
     this.start();
   };
 
@@ -290,6 +376,8 @@ export class Stage {
     const h = Math.max(1, this.canvas.clientHeight);
     this.size = { w, h };
     this.renderer.setSize(w, h, false);
+    this.composer.setPixelRatio(this.renderer.getPixelRatio());
+    this.composer.setSize(w, h);
     this.camera.aspect = w / h;
     this.applyShift();
     if (this.opts.still) this.renderStill();
@@ -339,11 +427,23 @@ export class Stage {
     const t = this.target;
     const k = (rate: number) => (this.reduced ? 1 : 1 - Math.exp(-dt * rate));
     const idle = !this.pointers.size && now - this.touched > 2600;
-    const spin = !this.reduced && idle ? (this.opts.autoRotate ?? 0) : 0;
+    const orbit = this.lamp.orbit;
+    this.clock += dt;
+    let spin = !this.reduced && idle && !orbit ? (this.opts.autoRotate ?? 0) : 0;
     if (spin) t.az += spin * dt;
+    if (orbit) {
+      // Pieza fija (pared, riel): la cámara se pasea despacio hasta que alguien la toma.
+      if (!this.reduced && !this.everTouched && this.opts.autoRotate) {
+        const mid = (orbit.min + orbit.max) / 2;
+        t.az = mid + Math.sin(this.clock * 0.32) * (orbit.max - orbit.min) * 0.22;
+        spin = 1;
+      }
+      t.az = Math.min(orbit.max, Math.max(orbit.min, t.az));
+    }
 
     s.power += (t.power - s.power) * k(t.power > s.power ? 2.4 : 5);
     s.tilt += (t.tilt - s.tilt) * k(7);
+    s.pan += (t.pan - s.pan) * k(7);
     s.explode += (t.explode - s.explode) * k(6);
     s.color.lerp(t.color, k(5));
     this.az += (t.az - this.az) * k(9);
@@ -353,6 +453,7 @@ export class Stage {
     const settled =
       Math.abs(t.power - s.power) < 0.002 &&
       Math.abs(t.tilt - s.tilt) < 0.001 &&
+      Math.abs(t.pan - s.pan) < 0.001 &&
       Math.abs(t.explode - s.explode) < 0.001 &&
       Math.abs(t.az - this.az) < 0.0008 &&
       Math.abs(t.zoom - this.zoom) < 0.001 &&
@@ -374,10 +475,15 @@ export class Stage {
     this.polarOffset += clampPolar - want;
     const polar = Math.min(view.maxPolar, Math.max(view.minPolar, view.polar + this.polar));
 
-    lamp.root.rotation.y = this.az;
+    lamp.root.rotation.y = lamp.orbit ? lamp.azimuth : this.az;
     lamp.apply(s);
     this.halo.color.copy(s.color);
     this.halo.intensity = lamp.halo.intensity * s.power;
+    if (this.fill) this.fill.intensity = this.fillBase + this.fillOff * (1 - s.power);
+    if (this.bounce) {
+      this.bounce.color.copy(s.color);
+      this.bounce.intensity = 0.75 * s.power;
+    }
     if (this.ghostMat) this.ghostMat.opacity = 0.3 + 0.28 * s.power;
 
     const aspect = this.size.w / this.size.h;
@@ -385,7 +491,7 @@ export class Stage {
     const radius = view.radius * (this.opts.distance ?? 1) * fit * lerp(1, 0.42, this.zoom);
     const tgt = view.target.clone().lerp(lamp.focus, this.zoom);
     // La cámara se mece un poco con el giro: da paralaje contra la pared aunque la pieza sea simétrica.
-    const sway = 0.3 * Math.sin(this.az - lamp.azimuth);
+    const sway = lamp.orbit ? this.az : 0.3 * Math.sin(this.az - lamp.azimuth);
     const flat = radius * Math.sin(polar);
     // Nunca por debajo del suelo.
     const height = Math.max(0.16, tgt.y + radius * Math.cos(polar));
@@ -393,7 +499,7 @@ export class Stage {
     this.camera.lookAt(tgt);
     this.camera.updateMatrixWorld();
 
-    this.renderer.render(this.scene, this.camera);
+    this.composer.render();
 
     if (Math.abs(s.power - this.lastPower) > 0.004) {
       this.lastPower = s.power;
@@ -408,6 +514,7 @@ export class Stage {
     const t = this.target;
     s.power = t.power;
     s.tilt = t.tilt;
+    s.pan = t.pan;
     s.explode = t.explode;
     s.color.copy(t.color);
     this.az = t.az;
@@ -430,6 +537,7 @@ export class Stage {
     disposeTree(this.scene);
     this.ghostMat?.map?.dispose();
     this.envTex.dispose();
+    this.composer.dispose();
     this.renderer.dispose();
   }
 }

@@ -54,6 +54,7 @@ export default function ToneDemo() {
           options={{
             model: 'spot360',
             ghost: 'SPOTLIGHT 360',
+            bare: true,
             ghostWidth: 4.4,
             ghostY: 1.1,
             tone: OPTIONS[0].color,

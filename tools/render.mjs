@@ -48,7 +48,7 @@ for (const [id, hex] of [
     name: `tono-${id}`,
     w: 1600,
     h: 1000,
-    query: `slug=spotlight-360&power=1&tilt=0.74&tone=${hex}&az=-0.62&distance=0.98&sx=0.1&sy=0.07&ghostWidth=4.4&ghostY=1.1`,
+    query: `slug=spotlight-360&power=1&tilt=0.74&tone=${hex}&az=-0.62&distance=0.98&sx=0.1&sy=0.07&ghostWidth=4.4&ghostY=1.1&bare=1`,
   });
 }
 
@@ -63,7 +63,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
 for (const job of jobs) {
-  if (only && !only.some((o) => job.name.startsWith(o))) continue;
+  if (only && !only.some((o) => job.name.startsWith(o) || job.name.endsWith(o))) continue;
   // Se dibuja al doble de resolución y se reduce al exportar: bordes suaves sin depender del antialiasing del equipo.
   const page = await browser.newPage({ viewport: { width: job.w, height: job.h }, deviceScaleFactor: 2 });
   page.on('pageerror', (e) => console.log('[error]', e.message));

@@ -25,7 +25,8 @@ El servidor (`server.js`) usa la variable `PORT` que Railway asigna.
 | ----------------------------------- | --------------------- |
 | WhatsApp, Instagram, direcciones    | `src/config.ts`       |
 | Productos, textos y fichas técnicas | `src/data/catalog.ts` |
-| Modelos 3D (hechos por código)      | `src/three/models.ts` |
+| Modelos 3D (hechos por código)      | `src/three/catalog/*.ts` (por tipo) y `src/three/models.ts` |
+| Piezas comunes (ópticas, riel, aros) | `src/three/parts.ts`  |
 | Escenario, cámara y controles 3D    | `src/three/stage.ts`  |
 | Colores, tipografía y estilos       | `src/styles.css`      |
 | Fotos de producto                   | `public/img/`         |
@@ -34,7 +35,7 @@ El servidor (`server.js`) usa la variable `PORT` que Railway asigna.
 ## Agregar un producto
 
 1. Añadir su entrada en `src/data/catalog.ts`.
-2. Si la forma es nueva, crear su modelo en `src/three/models.ts` y registrarlo en `buildLamp`.
+2. Si la forma es nueva, crear su modelo en el archivo de su tipo dentro de `src/three/catalog/` (magnético, empotrado, superficie, aplique, colgante) y registrarlo en `buildLamp` (`src/three/models.ts`).
 3. Regenerar las imágenes de tarjeta (ver abajo).
 
 ## Regenerar los renders de las tarjetas

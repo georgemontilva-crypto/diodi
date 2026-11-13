@@ -9,7 +9,7 @@ import ToneDemo from '../components/ToneDemo';
 import Rail from '../components/Rail';
 import Locations from '../components/Locations';
 import ContactLink from '../components/ContactLink';
-import { products } from '../data/catalog';
+import { featured } from '../data/catalog';
 import { delay, useMedia, useTitle } from '../hooks';
 
 /** Posición final del divisor tras la entrada: queda justo a la derecha del titular. */
@@ -141,7 +141,7 @@ export default function Home() {
             Ver todo el catálogo
           </Link>
         </div>
-        <Rail items={products} label="Productos destacados" />
+        <Rail items={featured} label="Productos destacados" />
       </section>
 
       <LambaScroll />

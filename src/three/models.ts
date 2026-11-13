@@ -3,65 +3,16 @@
 
 import * as THREE from 'three';
 import type { ModelId } from '../data/catalog';
-import {
-  applyFinish,
-  beamTexture,
-  bodyMaterial,
-  flutedCylinder,
-  hammeredTexture,
-  lerp,
-  lightMaterial,
-  makeGlow,
-  mesh,
-} from './kit';
+import { applyFinish, bodyMaterial, flutedCylinder, hammeredTexture, lightMaterial, makeGlow, mesh } from './kit';
 
-export interface LampState {
-  /** 0 apagada · 1 encendida. */
-  power: number;
-  color: THREE.Color;
-  /** 0–1: inclinación del spot. */
-  tilt: number;
-  /** 0–1: despiece. */
-  explode: number;
-}
+import { V, at, type Lamp } from './lamp';
+import { magGlobe, magGrille, magLinear, magSpot } from './catalog/magnetic';
+import { spot360, surfaceCan, surfaceTilt } from './catalog/ceiling';
+import { lamba, linearFour, miniSpot } from './catalog/recessed';
+import { bollard, wallBifocus, wallCube, wallCurved, wallEmerald, wallTrap } from './catalog/wall';
+import { pendantSpiral, pendantStone } from './catalog/organic';
 
-export interface LampView {
-  target: THREE.Vector3;
-  radius: number;
-  polar: number;
-  minPolar: number;
-  maxPolar: number;
-}
-
-export type EnvId = 'table' | 'room' | 'studio';
-
-export interface Lamp {
-  /** Gira sobre la tornamesa. */
-  root: THREE.Group;
-  /** Objetos de la escena que no giran (techo, pedestal). */
-  props?: THREE.Group;
-  env: EnvId;
-  /** Giro inicial de la tornamesa. */
-  azimuth: number;
-  /** Punto al que se acerca la cámara al hacer zoom. */
-  focus: THREE.Vector3;
-  /** Nombre fantasma en la pared: altura y ancho. */
-  ghost: { y: number; width: number };
-  /** Resplandor en la pared detrás de la pieza. */
-  halo: { y: number; intensity: number };
-  view(state: LampState): LampView;
-  apply(state: LampState): void;
-  setFinish(id: string): void;
-  /** Piezas rotuladas (despiece). */
-  anchors?: { id: string; label: string; object: THREE.Object3D; side: 1 | -1 }[];
-}
-
-const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-
-function at<T extends THREE.Object3D>(o: T, x: number, y: number, z: number): T {
-  o.position.set(x, y, z);
-  return o;
-}
+export type { EnvId, Lamp, LampState, LampView } from './lamp';
 
 function downSpot(y: number, angle: number, penumbra = 0.9) {
   const light = new THREE.SpotLight('#ffffff', 0, 0, angle, penumbra, 2);
@@ -391,279 +342,7 @@ function pendant(kind: 'disc' | 'dome'): Lamp {
   };
 }
 
-/* ───────────────────────── Spotlight 360 ───────────────────────── */
-
-function spot360(): Lamp {
-  const H = 1.9; // altura del techo de la maqueta
-  const L = 0.5; // largo del cuerpo
-  const R = 0.19;
-  const HALF = 0.32; // semiángulo del haz
-
-  const root = new THREE.Group();
-  const props = new THREE.Group();
-  const body = bodyMaterial('negro', { side: THREE.DoubleSide });
-  const dark = new THREE.MeshStandardMaterial({ color: '#070707', roughness: 0.9, side: THREE.DoubleSide, envMapIntensity: 0.1 });
-  const lens = lightMaterial('#3a332c');
-  const plaster = new THREE.MeshStandardMaterial({ color: '#8d8377', roughness: 0.95, envMapIntensity: 0 });
-  const stone = new THREE.MeshStandardMaterial({ color: '#b3a590', roughness: 0.8, envMapIntensity: 0.1 });
-
-  // Techo y una pieza en pedestal para tener a qué apuntar.
-  const ceiling = mesh(new THREE.BoxGeometry(16, 0.3, 9), plaster, false);
-  ceiling.receiveShadow = true;
-  props.add(at(ceiling, 0, H + 0.15, -0.6));
-  const plinth = mesh(new THREE.BoxGeometry(0.4, 0.46, 0.4), stone);
-  plinth.receiveShadow = true;
-  props.add(at(plinth, 0, 0.23, 0));
-  const orb = mesh(new THREE.SphereGeometry(0.17, 48, 32), stone);
-  orb.receiveShadow = true;
-  props.add(at(orb, 0, 0.63, 0));
-
-  // Aro al ras del techo.
-  root.add(at(mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.018, 96), body, false), 0, H - 0.009, 0));
-  const hole = mesh(new THREE.CircleGeometry(0.215, 64), dark, false);
-  hole.rotation.x = Math.PI / 2;
-  root.add(at(hole, 0, H - 0.0185, 0));
-
-  // Brazo, pivote y cuerpo.
-  const arm = mesh(new THREE.BoxGeometry(0.1, 1, 0.05), dark, false);
-  root.add(arm);
-  const pivot = new THREE.Group();
-  root.add(pivot);
-  const slide = new THREE.Group();
-  pivot.add(slide);
-
-  slide.add(at(mesh(new THREE.CylinderGeometry(R, R, L, 72, 1, true), body), 0, -L / 2, 0));
-  const back = mesh(new THREE.CircleGeometry(R, 64), body, false);
-  back.rotation.x = -Math.PI / 2;
-  slide.add(at(back, 0, -0.002, 0));
-  slide.add(at(mesh(new THREE.CylinderGeometry(R - 0.012, R - 0.012, 0.2, 64, 1, true), dark, false), 0, -L + 0.1, 0));
-  const face = mesh(new THREE.CircleGeometry(R - 0.014, 64), lens, false);
-  face.rotation.x = Math.PI / 2;
-  slide.add(at(face, 0, -L + 0.16, 0));
-  const rim = mesh(new THREE.TorusGeometry(R - 0.004, 0.006, 10, 96), body, false);
-  rim.rotation.x = Math.PI / 2;
-  slide.add(at(rim, 0, -L, 0));
-
-  const light = new THREE.SpotLight('#ffffff', 0, 0, HALF, 0.5, 2);
-  light.position.set(0, -L + 0.14, 0);
-  light.castShadow = true;
-  light.shadow.mapSize.set(1024, 1024);
-  light.shadow.bias = -0.0006;
-  light.shadow.radius = 4;
-  light.shadow.camera.near = 0.2;
-  light.shadow.camera.far = 8;
-  const target = at(new THREE.Object3D(), 0, -L - 1, 0);
-  light.target = target;
-  slide.add(light, target);
-
-  const beamLen = 2.4;
-  const beamMat = new THREE.MeshBasicMaterial({
-    map: beamTexture(),
-    transparent: true,
-    opacity: 0,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    fog: false,
-  });
-  const beam = mesh(new THREE.ConeGeometry(Math.tan(HALF) * beamLen + R * 0.6, beamLen, 48, 1, true), beamMat, false);
-  beam.renderOrder = 8;
-  slide.add(at(beam, 0, -L + 0.2 - beamLen / 2, 0));
-  const glow = at(makeGlow(0.7), 0, -L + 0.05, 0);
-  slide.add(glow);
-
-  // Rebote suave para que el techo y el aro no queden negros.
-  const bounce = new THREE.PointLight('#ffffff', 0, 0, 2);
-  bounce.position.set(0, 0.95, 1.7);
-  props.add(bounce);
-
-  return {
-    root,
-    props,
-    env: 'room',
-    azimuth: -0.28,
-    focus: V(0, H - 0.3, 0),
-    ghost: { y: 1.3, width: 3.1 },
-    halo: { y: 1.0, intensity: 0.35 },
-    view: () => ({ target: V(0, 1.02, 0), radius: 4.9, polar: 1.66, minPolar: 1.35, maxPolar: 1.74 }),
-    apply(s) {
-      const t = s.tilt;
-      const drop = lerp(0, 0.24, t);
-      pivot.position.set(0, H - 0.02 - drop, 0);
-      pivot.rotation.x = (t * Math.PI) / 2;
-      slide.position.y = lerp(L - 0.14, 0.07, Math.min(1, t * 1.6));
-      arm.scale.y = Math.max(0.001, drop + 0.04);
-      arm.position.set(0, H - 0.02 - drop / 2, 0);
-      arm.visible = drop > 0.01;
-
-      light.color.copy(s.color);
-      light.intensity = 46 * s.power;
-      lens.emissive.copy(s.color);
-      lens.emissiveIntensity = 0.02 + 3 * s.power;
-      beamMat.color.copy(s.color);
-      beamMat.opacity = 0.085 * s.power;
-      glow.material.color.copy(s.color);
-      glow.material.opacity = 0.5 * s.power;
-      bounce.color.copy(s.color);
-      bounce.intensity = 0.9 * s.power;
-    },
-    setFinish(id) {
-      applyFinish(body, id);
-    },
-  };
-}
-
-/* ───────────────────────── Lamba ───────────────────────── */
-
-function lamba(): Lamp {
-  const root = new THREE.Group();
-  const trimMat = bodyMaterial('blanco', { side: THREE.DoubleSide });
-  const dark = bodyMaterial('negro', { side: THREE.DoubleSide });
-  const alu = new THREE.MeshStandardMaterial({ color: '#9a9b9d', metalness: 0.9, roughness: 0.38, envMapIntensity: 0.8 });
-  const steel = new THREE.MeshStandardMaterial({
-    color: '#c9c9c7',
-    metalness: 1,
-    roughness: 0.25,
-    side: THREE.DoubleSide,
-    envMapIntensity: 0.8,
-  });
-  const optic = new THREE.MeshPhysicalMaterial({
-    color: '#ffffff',
-    roughness: 0.12,
-    transparent: true,
-    opacity: 0.42,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    flatShading: true,
-    envMapIntensity: 1.1,
-  });
-  const chip = lightMaterial('#e8c94a');
-  const board = new THREE.MeshStandardMaterial({ color: '#e9e6df', roughness: 0.6, envMapIntensity: 0.3 });
-
-  const base = 0.85;
-  const asm = at(new THREE.Group(), 0, base, 0);
-  root.add(asm);
-  const part = (y: number, spread: number) => {
-    const g = at(new THREE.Group(), 0, y, 0);
-    g.userData = { y, spread };
-    asm.add(g);
-    return g;
-  };
-
-  // 1 · Aro embellecedor con reflector antideslumbrante.
-  const trim = part(0, -0.62);
-  const trimProfile = [
-    [0.56, 0.012],
-    [0.56, 0],
-    [0.42, 0],
-    [0.4, 0.02],
-    [0.3, 0.24],
-  ].map(([r, y]) => new THREE.Vector2(r, y));
-  trim.add(mesh(new THREE.LatheGeometry(trimProfile, 96), trimMat));
-
-  // 2 · Portalente.
-  const holder = part(0.25, -0.2);
-  holder.add(at(mesh(new THREE.CylinderGeometry(0.33, 0.31, 0.11, 72, 1, true), dark), 0, 0.055, 0));
-  const ringTop = mesh(new THREE.RingGeometry(0.2, 0.33, 72), dark, false);
-  ringTop.rotation.x = -Math.PI / 2;
-  holder.add(at(ringTop, 0, 0.11, 0));
-
-  // 3 · Óptica de 36°.
-  const lensPart = part(0.27, 0.22);
-  lensPart.add(at(mesh(flutedCylinder(0.28, 0.25, 0.1, 40, 0.012, false), optic, false), 0, 0.05, 0));
-  lensPart.children[0].renderOrder = 6;
-
-  // 4 · Módulo LED.
-  const led = part(0.39, 0.62);
-  led.add(at(mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.025, 48), board), 0, 0.0125, 0));
-  const die = mesh(new THREE.CircleGeometry(0.085, 40), chip, false);
-  die.rotation.x = Math.PI / 2;
-  led.add(at(die, 0, -0.002, 0));
-
-  // 5 · Disipador de aluminio.
-  const sink = part(0.42, 1.02);
-  sink.add(at(mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.44, 48), alu), 0, 0.22, 0));
-  const finGeo = new THREE.BoxGeometry(0.17, 0.4, 0.014);
-  const fins = new THREE.InstancedMesh(finGeo, alu, 30);
-  fins.castShadow = true;
-  const m4 = new THREE.Matrix4();
-  for (let i = 0; i < 30; i++) {
-    const a = (i / 30) * Math.PI * 2;
-    m4.makeRotationY(-a);
-    m4.setPosition(Math.cos(a) * 0.255, 0.23, Math.sin(a) * 0.255);
-    fins.setMatrixAt(i, m4);
-  }
-  sink.add(fins);
-  sink.add(at(mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.02, 64), alu), 0, 0.01, 0));
-
-  // 6 · Conector del driver.
-  const conn = part(0.87, 1.5);
-  conn.add(at(mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.09, 32), board), 0, 0.045, 0));
-  conn.add(at(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 24), dark), 0, 0.11, 0));
-
-  // 7 · Aro de montaje con clips de resorte.
-  const mount = part(0.2, 2.1);
-  mount.add(at(mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.2, 96, 1, true), steel), 0, 0.1, 0));
-  for (const side of [-1, 1]) {
-    const clip = new THREE.Group();
-    clip.add(at(mesh(new THREE.BoxGeometry(0.36, 0.012, 0.07), steel), 0.18, 0, 0));
-    clip.add(at(mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.09, 16), steel), 0, 0, 0));
-    clip.children[1].rotation.x = Math.PI / 2;
-    clip.rotation.z = 0.5;
-    clip.scale.x = side;
-    clip.position.set(side * 0.43, 0.13, 0);
-    mount.add(clip);
-  }
-
-  const parts = [trim, holder, lensPart, led, sink, conn, mount];
-
-  const { light, target } = downSpot(base + 0.12, 0.34, 0.6);
-  light.castShadow = false;
-  root.add(light, target);
-  const glow = at(makeGlow(1.0, 0.5), 0, base + 0.06, 0);
-  root.add(glow);
-
-  return {
-    root,
-    env: 'studio',
-    azimuth: 0.4,
-    focus: V(0, base + 0.4, 0),
-    ghost: { y: 2.25, width: 3.4 },
-    halo: { y: 1.3, intensity: 2.6 },
-    view: (s) => ({
-      target: V(0, base + 0.3 + s.explode * 0.66, 0),
-      radius: 5.4 + s.explode * 4.1,
-      polar: lerp(1.7, 1.32, s.explode),
-      minPolar: 1.0,
-      maxPolar: 1.74,
-    }),
-    anchors: [
-      { id: 'mount', label: 'Aro de montaje con clips', object: mount, side: 1 },
-      { id: 'sink', label: 'Disipador de aluminio', object: sink, side: -1 },
-      { id: 'led', label: 'LED OSRAM · CRI 90', object: led, side: 1 },
-      { id: 'lens', label: 'Óptica de 36°', object: lensPart, side: -1 },
-      { id: 'trim', label: 'Aro con protección IP54', object: trim, side: 1 },
-    ],
-    apply(s) {
-      for (const p of parts) p.position.y = p.userData.y + p.userData.spread * s.explode;
-      const lit = s.power * (1 - s.explode * 0.75);
-      light.color.copy(s.color);
-      light.intensity = 30 * lit;
-      chip.emissive.copy(s.color);
-      chip.emissiveIntensity = 0.05 + 3.2 * s.power;
-      optic.emissive.copy(s.color);
-      optic.emissiveIntensity = 0.55 * s.power;
-      glow.position.y = base + 0.06 + trim.userData.spread * s.explode * 0.4;
-      glow.material.color.copy(s.color);
-      glow.material.opacity = 0.6 * lit;
-    },
-    setFinish(id) {
-      applyFinish(trimMat, id);
-    },
-  };
-}
-
-export function buildLamp(id: ModelId): Lamp {
+export function buildLamp(id: ModelId, variant?: string): Lamp {
   switch (id) {
     case 'midnight':
       return midnight();
@@ -675,9 +354,41 @@ export function buildLamp(id: ModelId): Lamp {
       return pendant('disc');
     case 'pendantDome':
       return pendant('dome');
+    case 'pendantStone':
+      return pendantStone();
+    case 'pendantSpiral':
+      return pendantSpiral();
     case 'spot360':
       return spot360();
+    case 'surfaceCan':
+      return surfaceCan();
+    case 'surfaceTilt':
+      return surfaceTilt();
     case 'lamba':
       return lamba();
+    case 'miniSpot':
+      return miniSpot();
+    case 'linearFour':
+      return linearFour();
+    case 'magSpot':
+      return magSpot();
+    case 'magGrille':
+      return magGrille(variant);
+    case 'magLinear':
+      return magLinear();
+    case 'magGlobe':
+      return magGlobe();
+    case 'wallCurved':
+      return wallCurved(variant);
+    case 'wallTrap':
+      return wallTrap();
+    case 'wallBifocus':
+      return wallBifocus();
+    case 'wallEmerald':
+      return wallEmerald();
+    case 'wallCube':
+      return wallCube();
+    case 'bollard':
+      return bollard();
   }
 }
