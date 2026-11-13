@@ -1959,6 +1959,239 @@ html {
   transition-delay: 0.9s;
 }
 
+/* ── Sala Iluminak (recorrido 3D) ── */
+
+.sala {
+  position: relative;
+  height: 100svh;
+  min-height: 620px;
+  background: var(--night);
+  color: var(--bone);
+  overflow: hidden;
+}
+
+.sala__stage {
+  position: absolute;
+  inset: 0;
+}
+
+.sala__stage canvas,
+.sala__stage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sala__stage canvas {
+  touch-action: none;
+  cursor: grab;
+  outline: none;
+}
+
+.sala__stage canvas:active {
+  cursor: grabbing;
+}
+
+.sala__stage canvas:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--glow);
+}
+
+/* Velo superior: el título se lee igual con la sala de día o de noche. */
+.sala__stage::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 46%;
+  background: linear-gradient(rgba(13, 10, 7, 0.78), rgba(13, 10, 7, 0.32) 55%, transparent);
+  pointer-events: none;
+}
+
+.sala__head {
+  position: absolute;
+  inset: calc(var(--nav-h) + clamp(18px, 4vh, 40px)) var(--gutter) auto;
+  max-width: 26rem;
+  pointer-events: none;
+}
+
+.sala__head nav {
+  display: flex;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--bone-soft);
+  pointer-events: auto;
+}
+
+.sala__head nav a:hover {
+  color: var(--bone);
+}
+
+.sala__head h1 {
+  margin-top: 14px;
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+}
+
+.sala__head p {
+  margin-top: 10px;
+  color: var(--bone-soft);
+}
+
+.sala__bottom {
+  position: absolute;
+  inset: auto var(--gutter) clamp(18px, 4vh, 36px);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.sala__bottom .dock {
+  pointer-events: auto;
+}
+
+.sala__hint {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(13, 10, 7, 0.6);
+  font-size: 0.88rem;
+  color: var(--bone);
+  text-align: center;
+  transition: opacity 0.6s var(--ease);
+}
+
+.sala__hint.is-used {
+  opacity: 0;
+}
+
+.sala__views {
+  display: flex;
+  gap: 6px;
+}
+
+.sala__views button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--bone-line);
+  font-size: 0.88rem;
+  color: var(--bone);
+  transition:
+    background 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+
+.sala__views button:hover {
+  background: rgba(239, 230, 213, 0.1);
+  border-color: rgba(239, 230, 213, 0.4);
+}
+
+.sala--still .sala__head,
+.sala--still .sala__bottom,
+.sala--still .sala__stage::after {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .sala {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .sala__stage {
+    position: relative;
+    height: 66svh;
+    min-height: 380px;
+  }
+
+  .sala__head {
+    inset: calc(var(--nav-h) + 16px) var(--gutter) auto;
+  }
+
+  .sala__head p {
+    display: none;
+  }
+
+  .sala__bottom {
+    position: static;
+    padding: 16px var(--gutter) 28px;
+  }
+
+  .sala__bottom .dock {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 2px 20px;
+    border-radius: 20px;
+    padding: 8px 16px;
+  }
+
+  .sala__hint {
+    background: none;
+    color: var(--bone-soft);
+    padding: 0;
+  }
+
+  .sala__hint.is-used {
+    opacity: 1;
+  }
+}
+
+/* ── Portada: entrada a la sala ── */
+
+.salon {
+  position: relative;
+  display: block;
+  background: var(--night);
+  color: var(--bone);
+  overflow: hidden;
+}
+
+.salon img {
+  display: block;
+  width: 100%;
+  height: clamp(460px, 78vh, 820px);
+  object-fit: cover;
+  transition: transform 1.6s var(--ease);
+}
+
+.salon:hover img {
+  transform: scale(1.025);
+}
+
+.salon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 35%, rgba(13, 10, 7, 0.88));
+  pointer-events: none;
+}
+
+.salon__text {
+  position: absolute;
+  inset: auto 0 clamp(36px, 7vh, 80px);
+  z-index: 1;
+}
+
+.salon__text h2 {
+  margin-top: 10px;
+  max-width: 14ch;
+}
+
+.salon__text p {
+  max-width: 30rem;
+  margin-top: 16px;
+  color: var(--bone-soft);
+}
+
+.salon__line {
+  font-size: 0.95rem;
+  color: var(--sand-2);
+}
+
+.salon__text .btn {
+  margin-top: 28px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .has-reveal [data-reveal],
   .has-reveal .hero__copy > *,

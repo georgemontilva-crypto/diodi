@@ -148,6 +148,24 @@ export default function Home() {
 
       <ToneDemo />
 
+      <section className="salon" aria-labelledby="sala-titulo">
+        <img
+          src="/renders/sala-iluminak.webp"
+          alt="Sala con sofá curvo y pared de roble, iluminada por las lámparas colgantes de la línea Iluminak"
+          loading="lazy"
+          width={1920}
+          height={1080}
+        />
+        <div className="wrap salon__text" data-reveal>
+          <p className="salon__line">Línea Iluminak</p>
+          <h2 id="sala-titulo">Entra a la sala.</h2>
+          <p>Recórrela en 3D: camina entre los muebles, enciende las lámparas y cambia del día a la noche.</p>
+          <Link className="btn btn--sand" to="/sala-iluminak">
+            Recorrer la sala
+          </Link>
+        </div>
+      </section>
+
       <section className="advisory" id="asesoria" aria-labelledby="asesoria-titulo">
         <div className="wrap advisory__grid">
           <div className="advisory__text" data-reveal>

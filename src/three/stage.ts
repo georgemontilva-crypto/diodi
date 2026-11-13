@@ -494,7 +494,9 @@ export class Stage {
     const sway = lamp.orbit ? this.az : 0.3 * Math.sin(this.az - lamp.azimuth);
     const flat = radius * Math.sin(polar);
     // Nunca por debajo del suelo.
-    const height = Math.max(0.16, tgt.y + radius * Math.cos(polar));
+    // En sala la cámara nunca sube hasta el techo: si entrara en él, el techo dejaría de verse.
+    const top = lamp.env === 'room' ? CEILING - 0.22 : Infinity;
+    const height = Math.min(top, Math.max(0.16, tgt.y + radius * Math.cos(polar)));
     this.camera.position.set(tgt.x + flat * Math.sin(sway), height, tgt.z + flat * Math.cos(sway));
     this.camera.lookAt(tgt);
     this.camera.updateMatrixWorld();

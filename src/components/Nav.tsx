@@ -5,6 +5,7 @@ import ContactLink from './ContactLink';
 
 const LINKS = [
   { to: '/catalogo', label: 'Catálogo' },
+  { to: '/sala-iluminak', label: 'Sala Iluminak' },
   { to: '/#asesoria', label: 'Asesoría' },
   { to: '/contacto', label: 'Ubicaciones' },
 ];

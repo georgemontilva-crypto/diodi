@@ -10,6 +10,7 @@ import { dismissLoader } from './loader';
 
 const Product = lazy(() => import('./pages/Product'));
 const Studio = lazy(() => import('./pages/Studio'));
+const Sala = lazy(() => import('./pages/Sala'));
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/catalogo" element={<Catalog />} />
             <Route path="/producto/:slug" element={<Product />} />
+            <Route path="/sala-iluminak" element={<Sala />} />
             <Route path="/contacto" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
