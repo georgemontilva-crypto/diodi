@@ -13,7 +13,7 @@ import { roundedBox } from './parts';
 /** Medidas de la sala en metros. La pared de madera queda al fondo (z negativo). */
 const W = 4.6;
 const BACK = -3;
-const FRONT = 3.6;
+const FRONT = 4.4;
 const H = 2.7;
 const EYE = 1.52;
 /** El sofá es un arco: centro, radio al eje del asiento y media apertura en radianes. */
@@ -33,7 +33,19 @@ export const VIEWS: SalaView[] = [
   { id: 'general', label: 'Entrada', at: [1.15, 3.05], yaw: 0.24, pitch: -0.07 },
   { id: 'sofa', label: 'Sofá', at: [1.25, 1.2], yaw: 0.5, pitch: -0.14 },
   { id: 'luz', label: 'Lámparas', at: [-2.75, 0.9], yaw: -0.12, pitch: 0.3 },
+  { id: 'tv', label: 'Pared del TV', at: [0.35, 0.5], yaw: Math.PI - 0.04, pitch: 0.04 },
 ];
+
+/** Estado de una luminaria de la sala, tal como lo ve la interfaz. */
+export interface LampInfo {
+  id: string;
+  name: string;
+  on: boolean;
+  /** Intensidad, de 0,2 a 1,4. */
+  level: number;
+  /** Orientación en radianes, solo en las campanas. */
+  aim: number | null;
+}
 
 export interface SalaOptions {
   /** Empieza de día (luz natural) o de noche (solo las lámparas). */
@@ -41,14 +53,30 @@ export interface SalaOptions {
   /** Imagen fija: sin recorrido de entrada ni interacción. */
   still?: boolean;
   onMove?: () => void;
+  /** Se tocó una luminaria (ya cambió de estado). */
+  onSelect?: (lamp: LampInfo) => void;
 }
 
 interface Emitter {
-  light: THREE.SpotLight;
+  light?: THREE.Light;
   power: number;
-  glow: THREE.MeshBasicMaterial;
-  shade: THREE.MeshStandardMaterial;
+  glow: THREE.MeshBasicMaterial[];
+  glowGain: number;
+  shade?: THREE.MeshStandardMaterial;
+  shadeGain: number;
+  /** Color propio (si no, el tono elegido para la sala). */
+  tint?: THREE.Color;
 }
+
+/** Una luminaria que se puede tocar: se enciende, se regula y, si es campana, se orienta. */
+interface Unit extends LampInfo {
+  cur: number;
+  tilt: number;
+  holder?: THREE.Object3D;
+  emitters: Emitter[];
+}
+
+const HIT = new THREE.MeshBasicMaterial({ visible: false });
 
 function canvasTexture(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, color = true) {
   const c = document.createElement('canvas');
@@ -137,6 +165,72 @@ function boucleTexture() {
   );
 }
 
+/** Tejido de la cinta del sistema. */
+function beltTexture() {
+  return canvasTexture(32, 32, (g) => {
+    g.fillStyle = '#d2c7b1';
+    g.fillRect(0, 0, 32, 32);
+    g.strokeStyle = 'rgba(110,96,74,0.4)';
+    g.lineWidth = 1.2;
+    for (let i = -32; i < 64; i += 5) {
+      g.beginPath();
+      g.moveTo(i, 0);
+      g.lineTo(i + 32, 32);
+      g.moveTo(i + 32, 0);
+      g.lineTo(i, 32);
+      g.stroke();
+    }
+  });
+}
+
+/**
+ * Cinta plana que sigue una curva: es la que sostiene y alimenta las luminarias.
+ * `side` es la dirección del ancho.
+ */
+function belt(pts: THREE.Vector3[], side: THREE.Vector3, width = 0.032, thick = 0.004, seg = 56) {
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.35);
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  const len = curve.getLength();
+  const s = side.clone().normalize();
+  for (let i = 0; i <= seg; i++) {
+    const p = curve.getPoint(i / seg);
+    const n = curve
+      .getTangent(i / seg)
+      .cross(s)
+      .normalize();
+    const v = ((i / seg) * len) / width;
+    for (const [a, b, u] of [
+      [1, 1, 0],
+      [-1, 1, 1],
+      [-1, -1, 0],
+      [1, -1, 1],
+    ]) {
+      pos.push(
+        p.x + (s.x * a * width + n.x * b * thick) / 2,
+        p.y + (s.y * a * width + n.y * b * thick) / 2,
+        p.z + (s.z * a * width + n.z * b * thick) / 2,
+      );
+      uv.push(u, v);
+    }
+    if (i < seg) {
+      const o = i * 4;
+      for (let k = 0; k < 4; k++) {
+        const a = o + k;
+        const b = o + ((k + 1) % 4);
+        idx.push(a, b, a + 4, b, b + 4, a + 4);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
 /** Contorno cerrado de un rectángulo redondeado (radio, altura) para tornear. */
 function roundRect(r0: number, y0: number, r1: number, y1: number, rad: number) {
   const pts: THREE.Vector2[] = [];
@@ -193,14 +287,15 @@ export class Sala {
   private keys = new Set<string>();
   private drag: { id: number; x: number; y: number; sx: number; sy: number; t: number } | null = null;
   private blockers: { x: number; z: number; r: number }[] = [];
+  private walls: { x0: number; x1: number; z0: number; z1: number }[] = [];
+  private units: Unit[] = [];
+  private hits: THREE.Object3D[] = [];
+  private ray = new THREE.Raycaster();
   private reticle: THREE.Mesh;
-  private emitters: Emitter[] = [];
   private hemi: THREE.HemisphereLight;
   private sun: THREE.DirectionalLight;
   private tone = new THREE.Color('#ffc387');
   private toneT = new THREE.Color('#ffc387');
-  private power = 1;
-  private powerT = 1;
   private day: number;
   private dayT: number;
   private bg = new THREE.Color();
@@ -236,6 +331,7 @@ export class Sala {
     this.buildShell();
     this.buildFurniture();
     this.buildLighting(!touch || !!opts.still);
+    this.buildTvWall();
 
     this.reticle = new THREE.Mesh(
       new THREE.RingGeometry(0.15, 0.19, 48),
@@ -520,12 +616,13 @@ export class Sala {
       bumpMap: grainTexture(),
       bumpScale: 0.5,
     });
-    const strap = new THREE.MeshStandardMaterial({ color: '#cbbfa9', roughness: 0.85, envMapIntensity: 0 });
+    const strap = this.strapMat;
     const add = (o: THREE.Object3D) => {
       this.scene.add(o);
       return o;
     };
     const emitter = (
+      u: Unit,
       holder: THREE.Group,
       angle: number,
       power: number,
@@ -547,7 +644,7 @@ export class Sala {
       const s = spot(angle, 0.9, cast);
       s.group.position.y = glowY - 0.01;
       holder.add(disc, s.group);
-      this.emitters.push({ light: s.light, power, glow, shade });
+      u.emitters.push({ light: s.light, power, glow: [glow], glowGain: 2.6, shade, shadeGain: 0.75 });
       return shade;
     };
     const anchor = (x: number) => {
@@ -559,14 +656,16 @@ export class Sala {
     const cord = (pts: THREE.Vector3[], radius = 0.011, mat: THREE.Material = strap) => {
       add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.35), 40, radius, 8), mat, false));
     };
+    const across = new THREE.Vector3(0, 0, 1);
     const swag = (a: THREE.Vector3, top: THREE.Vector3, b: THREE.Vector3) => {
       const sag = (p: THREE.Vector3, q: THREE.Vector3) =>
         p
           .clone()
           .lerp(q, 0.5)
           .add(new THREE.Vector3(0, -0.07, 0));
-      cord([a, sag(a, top), top, sag(top, b), b]);
+      add(mesh(belt([a, sag(a, top), top, sag(top, b), b], across), strap, false));
     };
+    let domes = 0;
 
     // Campana: media esfera negra con el interior blanco. Cuelga de su casquillo y se inclina.
     const dome = (x: number, y: number, tiltZ: number, tiltX: number, cast: boolean) => {
@@ -577,7 +676,12 @@ export class Sala {
       const body = new THREE.Group();
       body.position.y = -(r + 0.04);
       const geo = new THREE.SphereGeometry(r, 56, 24, 0, Math.PI * 2, 0, Math.PI / 2);
-      const shade = emitter(body, 1.02, 13, cast, new THREE.CircleGeometry(r * 0.86, 48).rotateX(Math.PI / 2), 0.035);
+      const u = this.unit(`campana-${++domes}`, `Campana ${domes}`);
+      u.aim = 0;
+      u.tilt = tiltZ;
+      u.holder = holder;
+      this.hit(u, new THREE.SphereGeometry(0.27, 12, 8), body, 0, 0.06, 0);
+      const shade = emitter(u, body, 1.02, 13, cast, new THREE.CircleGeometry(r * 0.86, 48).rotateX(Math.PI / 2), 0.035);
       const inner = new THREE.Mesh(geo, shade);
       inner.scale.setScalar(0.975);
       const cap = mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.05, 24), black, false);
@@ -595,7 +699,7 @@ export class Sala {
     swag(a[4], dome(2.2, 2.1, 0.3, 0.5, false), a[5]);
     swag(a[5], dome(3.25, 2.16, -0.58, 0.22, false), a[6]);
     // El cable baja por el rincón hasta su contrapeso en el suelo.
-    cord([a[0], new THREE.Vector3(-4.36, 1.5, -2.5), new THREE.Vector3(-4.3, 0.12, -2.55)]);
+    add(mesh(belt([a[0], new THREE.Vector3(-4.36, 1.5, -2.5), new THREE.Vector3(-4.3, 0.12, -2.55)], across), strap, false));
     const weight = mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.12, 32), black, false);
     weight.position.set(-4.3, 0.06, -2.55);
     add(weight);
@@ -605,7 +709,9 @@ export class Sala {
       const holder = new THREE.Group();
       holder.position.set(-1.35, 2.26, LINE);
       const geo = new THREE.CylinderGeometry(0.03, 0.34, 0.13, 64, 1, true);
-      const shade = emitter(holder, 1.08, 17, shadows, new THREE.SphereGeometry(0.045, 24, 16), -0.02);
+      const u = this.unit('plato', 'Plato');
+      this.hit(u, new THREE.CylinderGeometry(0.36, 0.36, 0.3, 12), holder, 0, 0.02, 0);
+      const shade = emitter(u, holder, 1.08, 17, shadows, new THREE.SphereGeometry(0.045, 24, 16), -0.02);
       const inner = new THREE.Mesh(geo, shade);
       inner.scale.setScalar(0.985);
       holder.add(mesh(geo, black, false), inner);
@@ -630,7 +736,9 @@ export class Sala {
       }
       const holder = new THREE.Group();
       holder.position.set(x, y - 0.034, LINE);
-      emitter(holder, 1.12, 15, false, new THREE.BoxGeometry(len - 0.12, 0.006, 0.03), 0);
+      const u = this.unit('barra', 'Barra lineal');
+      this.hit(u, new THREE.BoxGeometry(len, 0.22, 0.22), holder, 0, 0.03, 0);
+      emitter(u, holder, 1.12, 15, false, new THREE.BoxGeometry(len - 0.12, 0.006, 0.03), 0);
       add(holder);
       cord([a[3], new THREE.Vector3(-0.2, y + 0.16, LINE), new THREE.Vector3(x - len / 2, y, LINE)], 0.006, black);
       cord([new THREE.Vector3(x + len / 2, y, LINE), new THREE.Vector3(1.4, y + 0.16, LINE), a[4]], 0.006, black);
@@ -642,12 +750,222 @@ export class Sala {
     add(driver);
   }
 
+  /* ───────────── Pared del TV ───────────── */
+
+  private strapMat = new THREE.MeshStandardMaterial({
+    map: beltTexture(),
+    roughness: 0.9,
+    envMapIntensity: 0,
+    side: THREE.DoubleSide,
+  });
+
+  private buildTvWall() {
+    const add = <T extends THREE.Object3D>(o: T, x: number, y: number, z: number) => {
+      o.position.set(x, y, z);
+      this.scene.add(o);
+      return o;
+    };
+    const std = (color: string, roughness = 0.6, metalness = 0, env = 0) =>
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness,
+        metalness,
+        envMap: env ? this.env : null,
+        envMapIntensity: env,
+        dithering: true,
+      });
+    const black = std('#131211', 0.46, 0.35, 1.3);
+    const whiteLac = std('#ece8e1', 0.45);
+    const chrome = std('#d8d8d8', 0.12, 1, 1.6);
+    const gold = std('#b48d4c', 0.28, 1, 1.5);
+    const Z = FRONT;
+    const glowMat = (map?: THREE.Texture) => new THREE.MeshBasicMaterial({ color: '#000000', map });
+
+    // Panel, televisor, repisa flotante y mueble bajo.
+    const panel = add(mesh(roundedBox(3.9, 1.5, 0.04, 0.006), std('#ded8cd', 0.8), false), 0, 1.7, Z - 0.02);
+    panel.receiveShadow = true;
+    add(mesh(roundedBox(1.72, 0.98, 0.035, 0.008), std('#0a0a0b', 0.25, 0.4, 0.9), false), 0, 1.78, Z - 0.06);
+    const screen = glowMat();
+    const tv = this.unit('tv', 'Televisor', false);
+    tv.emitters.push({ power: 0, glow: [screen], glowGain: 1, shadeGain: 0, tint: new THREE.Color('#9fb6d8') });
+    const face = add(new THREE.Mesh(new THREE.PlaneGeometry(1.68, 0.94), screen), 0, 1.78, Z - 0.079);
+    face.rotation.y = Math.PI;
+    this.hit(tv, new THREE.BoxGeometry(1.72, 0.98, 0.1), this.scene, 0, 1.78, Z - 0.08);
+
+    const board = std('#d6cfc3', 0.7);
+    add(mesh(roundedBox(4.0, 0.04, 0.4, 0.006), board), 0.3, 0.92, Z - 0.2).receiveShadow = true;
+    add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.9, 24), chrome), 1.75, 0.45, Z - 0.22);
+    for (const x of [0.25, -1.35]) add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 24), chrome), x, 0.7, Z - 0.22);
+    const cab = add(mesh(roundedBox(3.4, 0.5, 0.46, 0.008), whiteLac), -0.8, 0.25, Z - 0.23);
+    cab.receiveShadow = true;
+    const seam = std('#a9a297', 0.9);
+    for (const x of [-1.93, -0.8, 0.33]) add(mesh(new THREE.BoxGeometry(0.006, 0.36, 0.004), seam, false), x, 0.22, Z - 0.462);
+    add(mesh(new THREE.BoxGeometry(3.4, 0.012, 0.004), seam, false), -0.8, 0.42, Z - 0.462);
+    this.walls.push({ x0: -2.5, x1: 2.3, z0: Z - 0.46, z1: Z });
+    this.shadow(-0.8, Z - 0.3, 3.0, 0.3);
+
+    // Objetos de la repisa.
+    const shelf = 0.94;
+    const figure = std('#f0ede7', 0.55);
+    for (const x of [0.15, -0.15, -0.45]) {
+      const g = new THREE.Group();
+      const body = mesh(new THREE.CapsuleGeometry(0.05, 0.07, 6, 16), figure);
+      body.position.y = 0.09;
+      const head = mesh(new THREE.SphereGeometry(0.036, 20, 14), figure);
+      head.position.y = 0.215;
+      g.add(body, head);
+      add(g, x, shelf, Z - 0.2);
+    }
+    add(mesh(roundedBox(0.34, 0.045, 0.22, 0.004), std('#17233f', 0.6)), 0.95, shelf + 0.068, Z - 0.2);
+    add(mesh(roundedBox(0.36, 0.045, 0.24, 0.004), std('#15130f', 0.6)), 0.95, shelf + 0.023, Z - 0.2);
+    // Lámpara de cúpula de vidrio con pie dorado.
+    add(mesh(new THREE.CylinderGeometry(0.07, 0.075, 0.015, 32), gold), -1.25, shelf + 0.008, Z - 0.2);
+    add(mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.3, 12), gold), -1.25, shelf + 0.16, Z - 0.2);
+    const bell = new THREE.MeshPhysicalMaterial({
+      color: '#8b8378',
+      roughness: 0.05,
+      transparent: true,
+      opacity: 0.4,
+      envMap: this.env,
+      envMapIntensity: 1.6,
+      side: THREE.DoubleSide,
+    });
+    add(mesh(new THREE.SphereGeometry(0.1, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.78), bell, false), -1.25, shelf + 0.3, Z - 0.2);
+    // Lámpara de pétalos: una esfera facetada que brilla suave.
+    {
+      const u = this.unit('petalos', 'Lámpara de pétalos');
+      const mat = new THREE.MeshStandardMaterial({
+        color: '#f4f1ea',
+        roughness: 0.6,
+        flatShading: true,
+        emissive: '#ffffff',
+        emissiveIntensity: 0,
+        envMapIntensity: 0,
+      });
+      add(mesh(new THREE.IcosahedronGeometry(0.13, 1), mat, false), 1.9, shelf + 0.2, Z - 0.2);
+      for (let i = 0; i < 3; i++) {
+        const leg = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.13, 8), black, false);
+        const a = (i / 3) * Math.PI * 2;
+        leg.rotation.set(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
+        add(leg, 1.9 + Math.sin(a) * 0.04, shelf + 0.06, Z - 0.2 + Math.cos(a) * 0.04);
+      }
+      const light = add(new THREE.PointLight('#ffffff', 0, 2.4, 2), 1.9, shelf + 0.22, Z - 0.42);
+      u.emitters.push({ light, power: 0.4, glow: [], glowGain: 0, shade: mat, shadeGain: 0.5 });
+      this.hit(u, new THREE.SphereGeometry(0.2, 10, 8), this.scene, 1.9, shelf + 0.18, Z - 0.2);
+    }
+    // Dos lámparas portátiles sobre el mueble.
+    for (const [x, mat] of [
+      [-1.75, black],
+      [-2.1, whiteLac],
+    ] as const) {
+      add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.012, 24), mat), x, 0.506, Z - 0.22);
+      add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.2, 10), mat), x, 0.6, Z - 0.22);
+      add(mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.02, 24), mat), x, 0.71, Z - 0.22);
+    }
+
+    // Sistema Iluminak: la cinta recorre la pared por arriba y baja por los dos lados.
+    const top = 2.55;
+    const zb = Z - 0.03;
+    const L = 2.75;
+    const flatWall = new THREE.Vector3(1, 0, 0);
+    const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+    this.scene.add(mesh(belt([V(L, top, zb), V(0, top - 0.012, zb), V(-L, top, zb)], V(0, 1, 0)), this.strapMat, false));
+    for (const side of [1, -1]) {
+      this.scene.add(
+        mesh(
+          belt([V(side * L, top, zb), V(side * L, 1.3, zb - 0.01), V(side * L, 0.1, zb - 0.04)], flatWall),
+          this.strapMat,
+          false,
+        ),
+      );
+      add(mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.12, 28), black, false), side * L, 0.06, zb - 0.04);
+    }
+    add(mesh(roundedBox(0.1, 0.08, 0.1, 0.02), black, false), L + 0.02, top + 0.03, Z - 0.06);
+    add(mesh(roundedBox(0.36, 0.09, 0.15, 0.04), black, false), -L + 0.06, top + 0.04, Z - 0.085);
+    add(mesh(roundedBox(0.12, 0.12, 0.05, 0.012), whiteLac, false), 0.55, top - 0.07, Z - 0.03);
+    const clip = (x: number, y: number) => add(mesh(roundedBox(0.035, 0.05, 0.03, 0.006), black, false), x, y, zb - 0.02);
+
+    // Lineal de puntos (izquierda, visto de frente) y lineal difuso (derecha).
+    const dots = canvasTexture(512, 32, (g) => {
+      g.fillStyle = '#000';
+      g.fillRect(0, 0, 512, 32);
+      g.fillStyle = '#fff';
+      for (let i = 0; i < 15; i++) {
+        g.beginPath();
+        g.arc(17 + i * 34.1, 16, 9, 0, Math.PI * 2);
+        g.fill();
+      }
+    });
+    const linear = (
+      id: string,
+      name: string,
+      x: number,
+      len: number,
+      map: THREE.Texture | undefined,
+      angle: number,
+      power: number,
+    ) => {
+      const u = this.unit(id, name);
+      const y = top - 0.075;
+      add(mesh(roundedBox(len, 0.07, 0.07, 0.006), black, false), x, y, Z - 0.1);
+      clip(x - len / 2 + 0.06, top - 0.02);
+      clip(x + len / 2 - 0.06, top - 0.02);
+      const glow = glowMat(map);
+      const strip = add(new THREE.Mesh(new THREE.PlaneGeometry(len - 0.06, 0.042), glow), x, y - 0.0355, Z - 0.1);
+      strip.rotation.x = Math.PI / 2;
+      const s = spot(angle, 0.85, false, [0, -1, -0.22]);
+      add(s.group, x, y - 0.05, Z - 0.1);
+      u.emitters.push({ light: s.light, power, glow: [glow], glowGain: 2.8, shadeGain: 0 });
+      this.hit(u, new THREE.BoxGeometry(len, 0.2, 0.2), this.scene, x, y, Z - 0.1);
+    };
+    linear('puntos', 'Lineal de puntos', 1.4, 1.0, dots, 0.62, 12);
+    linear('difuso', 'Lineal difuso', -1.65, 0.95, undefined, 1.05, 8);
+
+    // Globos opalinos sujetos a la cinta.
+    for (const [id, name, y, r, power] of [
+      ['globo-grande', 'Globo grande', 1.72, 0.115, 0.55],
+      ['globo-pequeno', 'Globo pequeño', 0.98, 0.075, 0.3],
+    ] as const) {
+      const u = this.unit(id, name);
+      const opal = new THREE.MeshStandardMaterial({
+        color: '#f3efe7',
+        roughness: 0.4,
+        emissive: '#ffffff',
+        emissiveIntensity: 0,
+        envMapIntensity: 0,
+      });
+      const x = L - 0.04 - r;
+      add(mesh(new THREE.SphereGeometry(r, 40, 28), opal, false), x, y, zb - 0.02 - r * 0.55);
+      clip(L - 0.02, y);
+      const light = add(new THREE.PointLight('#ffffff', 0, 5, 2), x - 0.08, y, zb - 0.3 - r);
+      u.emitters.push({ light, power, glow: [], glowGain: 0, shade: opal, shadeGain: 1.25 });
+      this.hit(u, new THREE.SphereGeometry(r + 0.09, 10, 8), this.scene, x, y, zb - r);
+    }
+
+    // Lineal vertical en el lado derecho: ilumina hacia el centro de la pared.
+    {
+      const u = this.unit('vertical', 'Lineal vertical');
+      const h = 1.35;
+      const y = 1.5;
+      add(mesh(roundedBox(0.06, h, 0.06, 0.006), black, false), -L, y, zb - 0.045);
+      clip(-L, y + h / 2 - 0.05);
+      clip(-L, y - h / 2 + 0.05);
+      const glow = glowMat();
+      const strip = add(new THREE.Mesh(new THREE.PlaneGeometry(0.036, h - 0.06), glow), -L + 0.0305, y, zb - 0.045);
+      strip.rotation.y = Math.PI / 2;
+      const light = add(new THREE.PointLight('#ffffff', 0, 5, 2), -L + 0.4, y, zb - 0.4);
+      u.emitters.push({ light, power: 0.75, glow: [glow], glowGain: 2.2, shadeGain: 0 });
+      this.hit(u, new THREE.BoxGeometry(0.22, h, 0.22), this.scene, -L, y, zb - 0.06);
+    }
+  }
+
   /* ───────────── Recorrido ───────────── */
 
   private free(x: number, z: number) {
     const m = 0.42;
     if (x < -W + m || x > W - m || z < BACK + m || z > FRONT - m) return false;
     for (const b of this.blockers) if (Math.hypot(x - b.x, z - b.z) < b.r + 0.32) return false;
+    for (const b of this.walls) if (x > b.x0 - 0.36 && x < b.x1 + 0.36 && z > b.z0 - 0.36 && z < b.z1 + 0.36) return false;
     const dx = x - SOFA.x;
     const dz = z - SOFA.z;
     const d = Math.hypot(dx, dz);
@@ -683,6 +1001,36 @@ export class Sala {
     return null;
   }
 
+  private ndc(clientX: number, clientY: number) {
+    const rect = this.canvas.getBoundingClientRect();
+    return new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+  }
+
+  /** Luminaria bajo el cursor, si la hay. */
+  private pickUnit(clientX: number, clientY: number) {
+    this.ray.setFromCamera(this.ndc(clientX, clientY), this.camera);
+    const hit = this.ray.intersectObjects(this.hits, false)[0];
+    return hit ? (this.units.find((u) => u.id === hit.object.userData.unit) ?? null) : null;
+  }
+
+  private unit(id: string, name: string, on = true): Unit {
+    const u: Unit = { id, name, on, level: 1, cur: on ? 1 : 0, aim: null, tilt: 0, emitters: [] };
+    this.units.push(u);
+    return u;
+  }
+
+  private hit(u: Unit, geo: THREE.BufferGeometry, parent: THREE.Object3D, x = 0, y = 0, z = 0) {
+    const m = new THREE.Mesh(geo, HIT);
+    m.position.set(x, y, z);
+    m.userData.unit = u.id;
+    parent.add(m);
+    this.hits.push(m);
+  }
+
+  private info(u: Unit): LampInfo {
+    return { id: u.id, name: u.name, on: u.on, level: u.level, aim: u.aim };
+  }
+
   private bind() {
     const c = this.canvas;
     const on = <K extends keyof HTMLElementEventMap>(
@@ -709,10 +1057,11 @@ export class Sala {
         (this.reticle.material as THREE.MeshBasicMaterial).opacity = 0;
         this.wake();
       } else if (e.pointerType === 'mouse') {
-        const p = this.pick(e.clientX, e.clientY);
+        const lamp = this.pickUnit(e.clientX, e.clientY);
+        const p = lamp ? null : this.pick(e.clientX, e.clientY);
         (this.reticle.material as THREE.MeshBasicMaterial).opacity = p ? 0.75 : 0;
         if (p) this.reticle.position.set(p.x, 0.012, p.y);
-        c.style.cursor = p ? 'pointer' : 'grab';
+        c.style.cursor = p || lamp ? 'pointer' : 'grab';
         this.dirty = true;
         this.wake();
       }
@@ -722,7 +1071,12 @@ export class Sala {
       if (!d || d.id !== e.pointerId) return;
       this.drag = null;
       const still = Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 7 && performance.now() - d.t < 450;
-      if (still && e.type === 'pointerup') {
+      const lamp = still && e.type === 'pointerup' ? this.pickUnit(e.clientX, e.clientY) : null;
+      if (lamp) {
+        lamp.on = !lamp.on;
+        this.opts.onSelect?.(this.info(lamp));
+        this.opts.onMove?.();
+      } else if (still && e.type === 'pointerup') {
         const p = this.pick(e.clientX, e.clientY);
         if (p) {
           this.goal = p;
@@ -756,9 +1110,25 @@ export class Sala {
 
   /* ───────────── API ───────────── */
 
+  /** Enciende o apaga todas las luminarias (la pantalla del TV va aparte). */
   setLights(onState: boolean) {
-    this.powerT = onState ? 1 : 0;
+    for (const u of this.units) if (u.id !== 'tv') u.on = onState;
     this.wake();
+  }
+
+  lamps(): LampInfo[] {
+    return this.units.map((u) => this.info(u));
+  }
+
+  setLamp(id: string, patch: Partial<Pick<LampInfo, 'on' | 'level' | 'aim'>>) {
+    const u = this.units.find((x) => x.id === id);
+    if (!u) return null;
+    if (patch.on !== undefined) u.on = patch.on;
+    if (patch.level !== undefined) u.level = Math.min(1.4, Math.max(0.2, patch.level));
+    if (patch.aim !== undefined && patch.aim !== null && u.aim !== null) u.aim = Math.min(0.7, Math.max(-0.7, patch.aim));
+    this.dirty = true;
+    this.wake();
+    return this.info(u);
   }
 
   setDay(day: boolean) {
@@ -793,7 +1163,7 @@ export class Sala {
 
   /** Dibuja el estado final y lo devuelve como imagen. */
   snapshot(quality = 0.9) {
-    this.power = this.powerT;
+    for (const u of this.units) u.cur = u.on ? u.level : 0;
     this.day = this.dayT;
     this.tone.copy(this.toneT);
     this.yaw = this.yawT;
@@ -829,7 +1199,10 @@ export class Sala {
   private frame = (now: number) => {
     this.raf = 0;
     if (this.disposed) return;
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    const raw = (now - this.last) / 1000;
+    const dt = Math.min(0.05, raw);
+    // Las transiciones siguen el tiempo real: en equipos lentos no se alargan.
+    const dtE = Math.min(0.3, raw);
     this.last = now;
     let moving = this.dirty;
     this.dirty = false;
@@ -856,17 +1229,18 @@ export class Sala {
       }
       moving = true;
     }
-    const k = 1 - Math.exp(-dt * 9);
+    const k = 1 - Math.exp(-dtE * 9);
     const ease = (from: number, to: number, rate = k) => (Math.abs(to - from) < 0.0004 ? to : lerp(from, to, rate));
-    const before = this.yaw + this.pitch + this.power + this.day + this.tone.r + this.tone.b;
+    const sum = () => this.yaw + this.pitch + this.day + this.tone.r + this.tone.b + this.units.reduce((t, u) => t + u.cur, 0);
+    const before = sum();
     this.yaw = ease(this.yaw, this.yawT);
     this.pitch = ease(this.pitch, this.pitchT);
-    const slow = 1 - Math.exp(-dt * 4);
-    this.power = ease(this.power, this.powerT, slow);
+    const slow = 1 - Math.exp(-dtE * 4);
+    for (const u of this.units) u.cur = ease(u.cur, u.on ? u.level : 0, slow);
     this.day = ease(this.day, this.dayT, slow);
     this.tone.lerp(this.toneT, slow);
     if (Math.abs(this.tone.r - this.toneT.r) + Math.abs(this.tone.b - this.toneT.b) < 0.002) this.tone.copy(this.toneT);
-    if (before !== this.yaw + this.pitch + this.power + this.day + this.tone.r + this.tone.b) moving = true;
+    if (before !== sum()) moving = true;
 
     this.draw();
     if (moving || this.drag) this.raf = requestAnimationFrame(this.frame);
@@ -878,12 +1252,20 @@ export class Sala {
     this.sun.intensity = lerp(0, 0.85, day);
     this.renderer.toneMappingExposure = lerp(1.1, 1.05, day);
     this.scene.background = this.bg.set('#0d0a07').lerp(new THREE.Color('#e9e4da'), day);
-    for (const e of this.emitters) {
-      e.light.color.copy(this.tone);
-      e.light.intensity = e.power * this.power * lerp(1, 0.8, day);
-      e.glow.color.copy(this.tone).multiplyScalar(0.02 + 2.6 * this.power);
-      e.shade.emissive.copy(this.tone);
-      e.shade.emissiveIntensity = 0.75 * this.power;
+    for (const u of this.units) {
+      if (u.holder && u.aim !== null) u.holder.rotation.z = u.tilt + u.aim;
+      for (const e of u.emitters) {
+        const c = e.tint ?? this.tone;
+        if (e.light) {
+          e.light.color.copy(c);
+          e.light.intensity = e.power * u.cur * lerp(1, 0.8, day);
+        }
+        for (const g of e.glow) g.color.copy(c).multiplyScalar(0.02 + e.glowGain * u.cur);
+        if (e.shade) {
+          e.shade.emissive.copy(c);
+          e.shade.emissiveIntensity = e.shadeGain * u.cur;
+        }
+      }
     }
     this.camera.position.set(this.pos.x, EYE, this.pos.y);
     this.camera.rotation.set(this.pitch, this.yaw, 0);

@@ -124,7 +124,7 @@ export const products: Product[] = [
   {
     slug: 'spot-magnetico',
     name: 'Spot magnético',
-    ghost: 'SPOT',
+    ghost: 'ILUMINAK',
     category: 'magnetico',
     model: 'magSpot',
     summary: 'Un cilindro que apunta a donde lo lleves.',
@@ -146,7 +146,7 @@ export const products: Product[] = [
   {
     slug: 'lineal-de-puntos',
     name: 'Lineal de puntos',
-    ghost: 'PUNTOS',
+    ghost: 'ILUMINAK',
     category: 'magnetico',
     model: 'magGrille',
     summary: 'Una fila de LED, cada uno en su celda.',
@@ -176,7 +176,7 @@ export const products: Product[] = [
   {
     slug: 'lineal-difuso',
     name: 'Lineal difuso',
-    ghost: 'LINEAL',
+    ghost: 'ILUMINAK',
     category: 'magnetico',
     model: 'magLinear',
     summary: 'Una línea de luz continua.',
@@ -192,7 +192,7 @@ export const products: Product[] = [
   {
     slug: 'globo-magnetico',
     name: 'Globo magnético',
-    ghost: 'GLOBO',
+    ghost: 'ILUMINAK',
     category: 'magnetico',
     model: 'magGlobe',
     summary: 'Una esfera de luz colgada del riel.',
@@ -210,7 +210,7 @@ export const products: Product[] = [
   {
     slug: 'lamba',
     name: 'Lamba',
-    ghost: 'LAMBA',
+    ghost: 'ILUMINAK',
     category: 'empotrado',
     model: 'lamba',
     summary: 'Un downlight pensado pieza por pieza.',
@@ -236,7 +236,7 @@ export const products: Product[] = [
   {
     slug: 'spotlight-360',
     name: 'Spotlight 360',
-    ghost: 'SPOTLIGHT 360',
+    ghost: 'ILUMINAK',
     category: 'empotrado',
     model: 'spot360',
     summary: 'Empotrado de 10 W que apunta a donde lo necesites.',
@@ -267,7 +267,7 @@ export const products: Product[] = [
   {
     slug: 'mini',
     name: 'Mini',
-    ghost: 'MINI',
+    ghost: 'ILUMINAK',
     category: 'empotrado',
     model: 'miniSpot',
     summary: 'Un spot pequeño con el aro que elijas.',
@@ -289,7 +289,7 @@ export const products: Product[] = [
   {
     slug: 'lineal-4-focos',
     name: 'Lineal de 4 focos',
-    ghost: 'LINEAL 4',
+    ghost: 'ILUMINAK',
     category: 'empotrado',
     model: 'linearFour',
     summary: 'Cuatro focos en un solo marco.',
@@ -313,7 +313,7 @@ export const products: Product[] = [
   {
     slug: 'cilindro',
     name: 'Cilindro',
-    ghost: 'CILINDRO',
+    ghost: 'ILUMINAK',
     category: 'superficie',
     model: 'surfaceCan',
     summary: 'Un downlight que no necesita cielo raso.',
@@ -334,7 +334,7 @@ export const products: Product[] = [
   {
     slug: 'cilindro-orientable',
     name: 'Cilindro orientable',
-    ghost: 'ORIENTABLE',
+    ghost: 'ILUMINAK',
     category: 'superficie',
     model: 'surfaceTilt',
     summary: 'De superficie, y apunta.',
@@ -358,7 +358,7 @@ export const products: Product[] = [
   {
     slug: 'aplique-curved',
     name: 'Curved',
-    ghost: 'CURVED',
+    ghost: 'ILUMINAK',
     category: 'aplique',
     model: 'wallCurved',
     summary: 'Un frente curvo que dibuja arcos de luz.',
@@ -389,7 +389,7 @@ export const products: Product[] = [
   {
     slug: 'aplique-trap',
     name: 'Trap',
-    ghost: 'TRAP',
+    ghost: 'ILUMINAK',
     category: 'aplique',
     model: 'wallTrap',
     summary: 'Una cuña: abre arriba, concentra abajo.',
@@ -412,7 +412,7 @@ export const products: Product[] = [
   {
     slug: 'aplique-bifocus',
     name: 'Bifocus',
-    ghost: 'BIFOCUS',
+    ghost: 'ILUMINAK',
     category: 'aplique',
     model: 'wallBifocus',
     summary: 'Un cilindro, dos haces.',
@@ -433,7 +433,7 @@ export const products: Product[] = [
   {
     slug: 'aplique-emerald',
     name: 'Emerald',
-    ghost: 'EMERALD',
+    ghost: 'ILUMINAK',
     category: 'aplique',
     model: 'wallEmerald',
     summary: 'Un cubo abierto que baña la pared.',
@@ -455,7 +455,7 @@ export const products: Product[] = [
   {
     slug: 'aplique-cube',
     name: 'Cube',
-    ghost: 'CUBE',
+    ghost: 'ILUMINAK',
     category: 'aplique',
     model: 'wallCube',
     summary: 'Un farol cuadrado de luz pareja.',
@@ -479,7 +479,7 @@ export const products: Product[] = [
   {
     slug: 'bolardo',
     name: 'Bolardo',
-    ghost: 'BOLARDO',
+    ghost: 'ILUMINAK',
     category: 'exterior',
     model: 'bollard',
     summary: 'Luz baja para marcar el camino.',
@@ -501,7 +501,7 @@ export const products: Product[] = [
   {
     slug: 'colgante-piedra',
     name: 'Piedra',
-    ghost: 'PIEDRA',
+    ghost: 'ILUMINAK',
     category: 'colgante',
     model: 'pendantStone',
     summary: 'Una cúpula irregular, como piedra de río.',
@@ -522,7 +522,7 @@ export const products: Product[] = [
   {
     slug: 'colgante-espiral',
     name: 'Espiral',
-    ghost: 'ESPIRAL',
+    ghost: 'ILUMINAK',
     category: 'colgante',
     model: 'pendantSpiral',
     summary: 'Una pantalla plisada que gira sobre sí misma.',
@@ -543,7 +543,7 @@ export const products: Product[] = [
   {
     slug: 'colgante-domo',
     name: 'Domo',
-    ghost: 'DOMO',
+    ghost: 'ILUMINAK',
     category: 'colgante',
     model: 'pendantDome',
     summary: 'Luz concentrada con interior dorado.',
@@ -567,7 +567,7 @@ export const products: Product[] = [
   {
     slug: 'colgante-plato',
     name: 'Plato',
-    ghost: 'PLATO',
+    ghost: 'ILUMINAK',
     category: 'colgante',
     model: 'pendantDisc',
     summary: 'Negro por fuera, dorado por dentro.',
@@ -593,7 +593,7 @@ export const products: Product[] = [
   {
     slug: 'earthtone',
     name: 'Earthtone',
-    ghost: 'EARTHTONE',
+    ghost: 'ILUMINAK',
     category: 'mesa',
     model: 'earthtone',
     summary: 'Una línea de luz dentro de vidrio ámbar.',
@@ -615,7 +615,7 @@ export const products: Product[] = [
   {
     slug: 'midnight',
     name: 'Midnight',
-    ghost: 'MIDNIGHT',
+    ghost: 'ILUMINAK',
     category: 'mesa',
     model: 'midnight',
     summary: 'Un disco de luz sobre un tallo mínimo.',
@@ -640,7 +640,7 @@ export const products: Product[] = [
   {
     slug: 'trend',
     name: 'Trend',
-    ghost: 'TREND',
+    ghost: 'ILUMINAK',
     category: 'mesa',
     model: 'trend',
     summary: 'Pantalla plisada, base cuadrada.',

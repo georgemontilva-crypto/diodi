@@ -1511,6 +1511,7 @@ button {
 }
 
 .dock__label {
+  white-space: nowrap;
   font-size: 0.85rem;
   color: var(--bone-soft);
 }
@@ -2083,6 +2084,24 @@ html {
 .sala__views button:hover {
   background: rgba(239, 230, 213, 0.1);
   border-color: rgba(239, 230, 213, 0.4);
+}
+
+.sala__close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--bone-line);
+  color: var(--bone);
+}
+
+.sala__close:hover {
+  background: rgba(239, 230, 213, 0.1);
+}
+
+.sala__views {
+  flex-wrap: wrap;
 }
 
 .sala--still .sala__head,

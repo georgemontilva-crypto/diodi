@@ -53,7 +53,7 @@ export default function ToneDemo() {
           label={`Spotlight 360 iluminando una pared con luz ${OPTIONS[active].label.toLowerCase()}. Arrastra para girarlo.`}
           options={{
             model: 'spot360',
-            ghost: 'SPOTLIGHT 360',
+            ghost: 'ILUMINAK',
             bare: true,
             ghostWidth: 4.4,
             ghostY: 1.1,
