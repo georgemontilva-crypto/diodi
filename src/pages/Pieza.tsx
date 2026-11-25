@@ -39,7 +39,7 @@ export default function Pieza() {
   return (
     <article className="piece">
       <div className="wrap piece__grid">
-        <div className="piece__media">
+        <div className="piece__media" data-vt="pieza-foto">
           {p.img ? (
             <img srcSet={srcSet(p.img)} sizes="(min-width: 900px) 560px, 92vw" alt={p.name} width={512} height={512} />
           ) : (

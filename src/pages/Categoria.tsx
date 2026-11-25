@@ -11,6 +11,7 @@ import {
   mountLabel,
   ordenar,
   ordenes,
+  srcSet,
   toneLabel,
   type Montaje,
   type Orden,
@@ -85,34 +86,52 @@ export default function Categoria() {
 
   return (
     <div className="shop shop--category">
-      <header className="wrap shop__head">
-        <nav className="crumbs" aria-label="Ruta">
-          <Link to="/catalogo">Catálogo</Link>
-          {parent && (
-            <>
-              <span aria-hidden="true">/</span>
-              <Link to={`/catalogo/${parent.slug}`}>{parent.label}</Link>
-            </>
+      <header className="cathero">
+        <div className="wrap cathero__grid">
+          <div className="cathero__text">
+            <nav className="crumbs" aria-label="Ruta">
+              <Link to="/catalogo">Catálogo</Link>
+              {parent && (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <Link to={`/catalogo/${parent.slug}`}>{parent.label}</Link>
+                </>
+              )}
+            </nav>
+            <h1 className="lit-title">{cat.label}</h1>
+            <p className="shop__lead">
+              {fmt(cat.total)} productos en tienda.
+              {cat.shown < cat.total &&
+                cat.shown > 0 &&
+                ` Aquí ves ${cat.shown}; pregunta por el resto en cualquiera de nuestras tiendas.`}
+            </p>
+            {children.length > 0 && (
+              <ul className="subcats" aria-label={`Tipos de ${cat.label}`}>
+                {children.map((c) => (
+                  <li key={c.slug}>
+                    <Link to={`/catalogo/${c.slug}`}>
+                      {c.label} <span>{c.total}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {cat.img && (
+            <div className="cathero__stage" aria-hidden="true">
+              <div className="cathero__plate" data-vt="cat-foto">
+                <img
+                  key={cat.slug}
+                  srcSet={srcSet(cat.img, 'c')}
+                  sizes="(min-width: 860px) 360px, 150px"
+                  alt=""
+                  width={512}
+                  height={512}
+                />
+              </div>
+            </div>
           )}
-        </nav>
-        <h1>{cat.label}</h1>
-        <p className="shop__lead">
-          {fmt(cat.total)} productos en tienda.
-          {cat.shown < cat.total &&
-            cat.shown > 0 &&
-            ` Aquí ves ${cat.shown}; pregunta por el resto en cualquiera de nuestras tiendas.`}
-        </p>
-        {children.length > 0 && (
-          <ul className="subcats" aria-label={`Tipos de ${cat.label}`}>
-            {children.map((c) => (
-              <li key={c.slug}>
-                <Link to={`/catalogo/${c.slug}`}>
-                  {c.label} <span>{c.total}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        </div>
       </header>
 
       {cat.shown === 0 ? (
@@ -220,7 +239,7 @@ export default function Categoria() {
             {data && list.length === 0 && <p className="shop__none">Ningún producto coincide. Prueba quitando algún filtro.</p>}
             <ul className="pgrid">
               {list.slice(0, limit).map((p, i) => (
-                <li key={p.id}>
+                <li key={p.id} style={{ '--i': i % STEP } as React.CSSProperties}>
                   <PiezaCard pieza={p} eager={i < 8} />
                 </li>
               ))}

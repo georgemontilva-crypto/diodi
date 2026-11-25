@@ -2449,143 +2449,6 @@ html {
   font-size: 1.15rem;
 }
 
-/* Índice de categorías: una lista de dos columnas, todas con el mismo peso. */
-.cindex {
-  margin-top: clamp(48px, 6vw, 80px);
-}
-
-.cindex__list {
-  columns: 2;
-  column-gap: clamp(32px, 5vw, 80px);
-  counter-reset: none;
-  padding: 0;
-  list-style: none;
-}
-
-.cindex__list li {
-  break-inside: avoid;
-}
-
-.cindex__list a {
-  position: relative;
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding-block: 12px;
-  border-bottom: 1px solid var(--umber-line);
-  transition: color 0.25s;
-}
-
-/* Una línea de luz recorre el borde inferior al pasar. */
-.cindex__list a::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--umber) 30%, var(--umber) 70%, transparent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.6s var(--ease);
-}
-
-.cindex__list a:hover::after,
-.cindex__list a:focus-visible::after {
-  transform: scaleX(1);
-}
-
-.cindex__thumb {
-  width: 52px;
-  height: 52px;
-  border-radius: 4px;
-  background: #fff;
-  overflow: hidden;
-}
-
-.cindex__thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cindex__name {
-  display: flex;
-  flex-direction: column;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(1.12rem, 1.7vw, 1.45rem);
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  transition: transform 0.45s var(--ease);
-}
-
-.cindex__name small {
-  font-family: var(--text);
-  font-weight: 400;
-  font-size: 0.74rem;
-  letter-spacing: 0;
-  color: var(--umber-soft);
-}
-
-.cindex__list a:hover .cindex__name {
-  transform: translateX(6px);
-}
-
-.cindex__count {
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--umber-soft);
-}
-
-/* Foto que sigue al cursor (solo con ratón). */
-.cindex__float {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 40;
-  width: 260px;
-  aspect-ratio: 1;
-  border-radius: 6px;
-  background: #fff;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-  box-shadow: 0 30px 60px -20px rgba(46, 29, 14, 0.45);
-  transition: opacity 0.3s var(--ease);
-}
-
-.cindex__float.is-on {
-  opacity: 1;
-}
-
-.cindex__float img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  animation: float-in 0.45s var(--ease);
-}
-
-@keyframes float-in {
-  from {
-    opacity: 0;
-    transform: scale(1.08);
-  }
-}
-
-@media (hover: none), (max-width: 900px) {
-  .cindex__float {
-    display: none;
-  }
-}
-
-@media (max-width: 760px) {
-  .cindex__list {
-    columns: 1;
-  }
-}
-
 /* Subcategorías: atajos dentro de una categoría madre. */
 .subcats {
   display: flex;
@@ -3507,6 +3370,419 @@ html {
 
   .vitrinas__track[aria-hidden='true'] {
     display: none;
+  }
+}
+
+/* ── Catálogo: la sala a oscuras ── */
+
+.shop--night {
+  position: relative;
+  background: var(--night);
+  color: var(--bone);
+  overflow: clip;
+}
+
+.shop--night > header,
+.shop--night > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* El charco de luz de la lámpara: sigue al cursor (lo mueve light.ts). */
+.shop__pool {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1200px;
+  height: 1200px;
+  margin: -600px 0 0 -600px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 177, 99, 0.2), rgba(255, 177, 99, 0.07) 46%, transparent 74%);
+  transform: translate3d(50vw, 420px, 0);
+  opacity: 0.5;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.shop__head--room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: end;
+  gap: 22px clamp(32px, 6vw, 96px);
+}
+
+.shop__head--room h1 {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin-left: -0.05em;
+  padding-bottom: 0.12em;
+  font-size: clamp(4.2rem, 15.5vw, 13.5rem);
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 0.84;
+}
+
+.shop__head--room .shop__lead {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--bone-soft);
+}
+
+.shop__head--room .search {
+  max-width: none;
+  margin: 0;
+}
+
+.shop__head--room .search input {
+  height: 64px;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+
+@media (max-width: 760px) {
+  .shop__head--room {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* El título se ilumina por donde pasa la lámpara. */
+.lit-title {
+  color: var(--bone);
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .lit-title {
+    color: transparent;
+    background: radial-gradient(
+      640px circle at var(--tx, 26%) var(--ty, 30%),
+      #fff5e4 0%,
+      #f3dcbd 24%,
+      rgba(239, 230, 213, 0.2) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+@media (forced-colors: active) {
+  .lit-title {
+    color: CanvasText;
+    background: none;
+  }
+}
+
+/* Vitrinas: todas del mismo tamaño. --l (0…1) es cuánta luz recibe cada una. */
+.lightgrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(30px, 3.4vw, 52px) clamp(14px, 1.7vw, 24px);
+  margin-top: clamp(56px, 7vw, 104px);
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 1180px) {
+  .lightgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .lightgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .lightgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 12px;
+  }
+}
+
+.tile {
+  display: block;
+  /* Con el teclado, la vitrina enfocada se enciende del todo. */
+  --lit: max(var(--l, 0.5), var(--f, 0));
+}
+
+.tile:focus-visible {
+  --f: 1;
+  outline-offset: 8px;
+}
+
+.tile__frame {
+  position: relative;
+  display: block;
+  transform: translate3d(0, calc(var(--lit) * -6px), 0);
+}
+
+/* Resplandor cálido: solo se nota cuando la vitrina está casi encendida. */
+.tile__frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  box-shadow:
+    0 30px 80px -14px rgba(255, 177, 99, 0.78),
+    0 0 36px -6px rgba(255, 190, 130, 0.5);
+  opacity: calc(var(--lit) * var(--lit) * var(--lit));
+}
+
+.tile__plate {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tile__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.9s var(--ease);
+}
+
+.tile__initials {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: var(--sand-2);
+  color: var(--umber);
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  letter-spacing: -0.05em;
+}
+
+.tile__shade {
+  position: absolute;
+  inset: 0;
+  background: #0f0a05;
+  opacity: calc(0.86 * (1 - var(--lit)));
+}
+
+.tile__text {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  opacity: calc(0.42 + 0.58 * var(--lit));
+}
+
+.tile__name {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1rem, 1.25vw, 1.2rem);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.tile__name small {
+  margin-bottom: 2px;
+  font-family: var(--text);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  color: var(--bone-soft);
+}
+
+.tile__count {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--glow);
+}
+
+@media (hover: hover) {
+  .tile:hover .tile__plate img {
+    transform: scale(1.06);
+  }
+}
+
+/* Resultados de búsqueda dentro de la sala. */
+.shop--night .shop__count,
+.shop--night .pcard__meta {
+  color: var(--bone-soft);
+}
+
+/* ── Categoría: la vitrina encendida ── */
+
+.shop--category {
+  padding-top: 0;
+}
+
+.shop--category .toolbar {
+  margin-top: 0;
+}
+
+.cathero {
+  position: relative;
+  background: var(--night);
+  color: var(--bone);
+  padding-block: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) clamp(44px, 6vw, 84px);
+  overflow: clip;
+}
+
+.cathero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  align-items: end;
+  gap: clamp(32px, 6vw, 96px);
+}
+
+.cathero h1 {
+  max-width: 11ch;
+  padding-bottom: 0.1em;
+  /* La luz le llega desde la vitrina, a la derecha. */
+  background-image: radial-gradient(1100px circle at 120% 30%, #fff5e4 0%, #f3dcbd 34%, rgba(239, 230, 213, 0.55) 100%);
+  font-size: clamp(3rem, 8.4vw, 7.8rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+}
+
+.cathero .crumbs,
+.cathero .shop__lead,
+.cathero .subcats span {
+  color: var(--bone-soft);
+}
+
+.cathero .crumbs a:hover {
+  color: var(--bone);
+}
+
+.cathero .subcats a {
+  border-color: var(--bone-line);
+}
+
+.cathero .subcats a:hover {
+  border-color: var(--bone);
+}
+
+.cathero__stage {
+  position: relative;
+  justify-self: end;
+  width: min(100%, 360px);
+}
+
+/* Haz de luz que cae desde arriba sobre la vitrina. */
+.cathero__stage::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 220%;
+  height: 720px;
+  transform: translateX(-50%);
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    rgba(255, 214, 170, 0.3) 0deg,
+    rgba(255, 177, 99, 0.13) 9deg,
+    transparent 17deg,
+    transparent 343deg,
+    rgba(255, 177, 99, 0.13) 351deg,
+    rgba(255, 214, 170, 0.3) 360deg
+  );
+  pointer-events: none;
+}
+
+.cathero__plate {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow:
+    0 50px 130px -30px rgba(255, 177, 99, 0.6),
+    0 0 60px -10px rgba(255, 190, 130, 0.35);
+}
+
+.cathero__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 860px) {
+  .cathero__grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .cathero__stage {
+    order: -1;
+    justify-self: start;
+    width: 132px;
+  }
+}
+
+/* Las tarjetas entran escalonadas al abrir la categoría. */
+@media (prefers-reduced-motion: no-preference) {
+  .pgrid > li {
+    animation: card-in 0.7s var(--ease) both;
+    animation-delay: calc(min(var(--i, 0), 11) * 38ms);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+}
+
+/* ── Transiciones entre páginas: la foto viaja ── */
+
+.nav {
+  view-transition-name: nav;
+}
+
+[data-vt='cat-foto'] {
+  view-transition-name: cat-foto;
+}
+
+[data-vt='pieza-foto'] {
+  view-transition-name: pieza-foto;
+}
+
+::view-transition-group(cat-foto),
+::view-transition-group(pieza-foto) {
+  animation-duration: 0.62s;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+::view-transition-old(root) {
+  animation: vt-out 0.26s ease both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 0.5s ease 0.08s both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Sin lámpara: las vitrinas quedan encendidas y el foco o el cursor las termina de encender. */
+  .tile {
+    --l: 0.86;
+  }
+
+  .tile:hover {
+    --f: 1;
   }
 }
 

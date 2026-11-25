@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import CategoryIndex from '../components/CategoryIndex';
 import PiezaCard from '../components/PiezaCard';
-import { buscar, cargarTienda, categorias, tiendaCargada, totalTienda, type Tienda as Datos } from '../data/tienda';
-import { fmt } from '../data/tienda';
+import { buscar, cargarTienda, categorias, fmt, ordenar, tiendaCargada, totalTienda, type Tienda as Datos } from '../data/tienda';
+import { useLight } from '../light';
 import { categories as coleccion } from '../data/catalog';
 import { delay, useTitle } from '../hooks';
 
@@ -33,6 +33,7 @@ export default function Tienda() {
   const [text, setText] = useState(q);
   const [limit, setLimit] = useState(STEP);
   const input = useRef<HTMLInputElement>(null);
+  const room = useRef<HTMLDivElement>(null);
   const { data, failed } = useTienda();
   useTitle(q ? `«${q}» — Catálogo DIODI` : 'Catálogo — DIODI LED');
 
@@ -60,21 +61,27 @@ export default function Tienda() {
     if (coleccion.some((c) => c.id === legacy)) return <Navigate to={`/coleccion?categoria=${legacy}`} replace />;
   }
 
-  const results = q && data ? buscar(data.piezas, q) : [];
+  // Las luminarias van antes que sus accesorios, igual que dentro de cada categoría.
+  const results = q && data ? ordenar(buscar(data.piezas, q), 'destacados') : [];
+  // Las vitrinas están cuando no hay búsqueda o cuando no encontró nada.
+  const grid = !q || (!!data && !results.length);
+  useLight(room, grid);
 
   return (
-    <div className="shop">
-      <header className="wrap shop__head">
-        <h1 data-reveal>Catálogo</h1>
-        <p className="shop__lead" data-reveal style={delay(90)}>
-          {fmt(totalTienda)} productos en nuestras tiendas: iluminación decorativa y técnica, domótica, energía y material
-          eléctrico.
+    <div className="shop shop--night" ref={room}>
+      <div className="shop__pool" data-lit-pool aria-hidden="true" />
+      <header className="wrap shop__head shop__head--room">
+        <h1 className="lit-title" data-lit-title>
+          Catálogo
+        </h1>
+        <p className="shop__lead" data-reveal style={delay(120)}>
+          {fmt(totalTienda)} productos en {categorias.length} categorías. La luz enciende lo que tienes cerca.
         </p>
         <form
-          className="search"
+          className="search search--dark"
           role="search"
           data-reveal
-          style={delay(170)}
+          style={delay(200)}
           onSubmit={(e) => {
             e.preventDefault();
             setParams(text.trim() ? { q: text.trim() } : {}, { replace: true });
@@ -131,7 +138,7 @@ export default function Tienda() {
                 </ul>
                 {results.length > limit && (
                   <div className="shop__more">
-                    <button type="button" className="btn btn--outline-umber" onClick={() => setLimit((l) => l + STEP)}>
+                    <button type="button" className="btn btn--outline" onClick={() => setLimit((l) => l + STEP)}>
                       Ver más ({fmt(results.length - limit)})
                     </button>
                   </div>

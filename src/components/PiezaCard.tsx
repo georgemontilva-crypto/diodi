@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import TLink from './TLink';
 import { categoria, resumen, ruta, srcSet, type Pieza } from '../data/tienda';
 import AddToList from './AddToList';
 
@@ -7,8 +7,8 @@ export default function PiezaCard({ pieza, eager = false }: { pieza: Pieza; eage
   const meta = resumen(pieza) || (pieza.cats[0] ? ruta(categoria(pieza.cats[0])!) : '');
   return (
     <article className="pcard">
-      <Link to={`/p/${pieza.slug}`} className="pcard__link">
-        <div className="pcard__media">
+      <TLink to={`/p/${pieza.slug}`} vt="pieza-foto" className="pcard__link">
+        <div className="pcard__media" data-vt-src>
           {pieza.img ? (
             <img
               srcSet={srcSet(pieza.img)}
@@ -25,7 +25,7 @@ export default function PiezaCard({ pieza, eager = false }: { pieza: Pieza; eage
         </div>
         <h3>{pieza.name}</h3>
         {meta && <p className="pcard__meta">{meta}</p>}
-      </Link>
+      </TLink>
       <AddToList pieza={pieza} compact />
     </article>
   );

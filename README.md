@@ -29,6 +29,8 @@ El servidor (`server.js`) usa la variable `PORT` que Railway asigna.
 | Modelos 3D (hechos por código)       | `src/three/catalog/*.ts` (por tipo) y `src/three/models.ts` |
 | Piezas comunes (ópticas, riel, aros) | `src/three/parts.ts`                                        |
 | Escenario, cámara y controles 3D     | `src/three/stage.ts`                                        |
+| Luz que sigue al cursor (catálogo)   | `src/light.ts`                                              |
+| Transiciones entre páginas           | `src/transition.ts` y `src/components/TLink.tsx`            |
 | Colores, tipografía y estilos        | `src/styles.css`                                            |
 | Fotos de producto                    | `public/img/`                                               |
 | Imágenes de las tarjetas (renders)   | `public/renders/`                                           |

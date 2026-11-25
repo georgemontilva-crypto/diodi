@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
@@ -6,19 +6,21 @@ import Home from './pages/Home';
 import Catalog from './pages/Catalog';
 import Contact from './pages/Contact';
 import Tienda from './pages/Tienda';
+import Categoria from './pages/Categoria';
+import Pieza from './pages/Pieza';
+import { routeRendered } from './transition';
 import NotFound from './pages/NotFound';
 import { dismissLoader } from './loader';
 
 const Product = lazy(() => import('./pages/Product'));
 const Studio = lazy(() => import('./pages/Studio'));
 const Sala = lazy(() => import('./pages/Sala'));
-const Categoria = lazy(() => import('./pages/Categoria'));
-const Pieza = lazy(() => import('./pages/Pieza'));
 const Lista = lazy(() => import('./pages/Lista'));
 
 function ScrollManager() {
-  const { pathname, hash } = useLocation();
-  useEffect(() => {
+  const { pathname, hash, key } = useLocation();
+  // Antes de pintar: así las transiciones entre páginas salen ya desde arriba.
+  useLayoutEffect(() => {
     if (hash) {
       const el = document.getElementById(hash.slice(1));
       if (el) {
@@ -28,6 +30,7 @@ function ScrollManager() {
     }
     window.scrollTo(0, 0);
   }, [pathname, hash]);
+  useLayoutEffect(() => routeRendered(), [key]);
   return null;
 }
 
