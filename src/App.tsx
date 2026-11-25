@@ -1,16 +1,20 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
 import Contact from './pages/Contact';
+import Tienda from './pages/Tienda';
 import NotFound from './pages/NotFound';
 import { dismissLoader } from './loader';
 
 const Product = lazy(() => import('./pages/Product'));
 const Studio = lazy(() => import('./pages/Studio'));
 const Sala = lazy(() => import('./pages/Sala'));
+const Categoria = lazy(() => import('./pages/Categoria'));
+const Pieza = lazy(() => import('./pages/Pieza'));
+const Lista = lazy(() => import('./pages/Lista'));
 
 function ScrollManager() {
   const { pathname, hash } = useLocation();
@@ -53,10 +57,15 @@ export default function App() {
         <Suspense fallback={<div className="page-loading" />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/catalogo" element={<Catalog />} />
+            <Route path="/catalogo" element={<Tienda />} />
+            <Route path="/catalogo/:slug" element={<Categoria />} />
+            <Route path="/p/:slug" element={<Pieza />} />
+            <Route path="/lista" element={<Lista />} />
+            <Route path="/coleccion" element={<Catalog />} />
             <Route path="/producto/:slug" element={<Product />} />
             <Route path="/sala-iluminak" element={<Sala />} />
-            <Route path="/contacto" element={<Contact />} />
+            <Route path="/tiendas" element={<Contact />} />
+            <Route path="/contacto" element={<Navigate to="/tiendas" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

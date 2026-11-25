@@ -77,9 +77,9 @@ function ProductView({ product }: { product: ProductData }) {
 
         <header className="viewer__head wrap">
           <nav aria-label="Ruta">
-            <Link to="/catalogo">Catálogo</Link>
+            <Link to="/coleccion">Colección 3D</Link>
             <span aria-hidden="true">/</span>
-            <Link to={`/catalogo?categoria=${category.id}`}>{category.label}</Link>
+            <Link to={`/coleccion?categoria=${category.id}`}>{category.label}</Link>
           </nav>
           <h1>{product.name}</h1>
           <p>{product.summary}</p>
@@ -276,8 +276,8 @@ function ProductView({ product }: { product: ProductData }) {
       <section className="collection collection--more" aria-labelledby="mas-titulo">
         <div className="wrap collection__head" data-reveal>
           <h2 id="mas-titulo">Sigue encendiendo.</h2>
-          <Link className="link" to="/catalogo">
-            Ver todo el catálogo
+          <Link className="link" to="/coleccion">
+            Ver toda la colección 3D
           </Link>
         </div>
         <Rail items={others} label="Otros productos" />

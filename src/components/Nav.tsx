@@ -2,13 +2,36 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import ContactLink from './ContactLink';
+import { useLista } from '../lista';
 
 const LINKS = [
   { to: '/catalogo', label: 'Catálogo' },
+  { to: '/coleccion', label: 'Colección 3D' },
   { to: '/sala-iluminak', label: 'Sala Iluminak' },
-  { to: '/#asesoria', label: 'Asesoría' },
-  { to: '/contacto', label: 'Ubicaciones' },
+  { to: '/tiendas', label: 'Tiendas' },
 ];
+
+/** Acceso a "Mi lista" con el número de productos guardados. */
+function ListLink() {
+  const items = useLista();
+  const n = items.length;
+  return (
+    <Link
+      to="/lista"
+      className="nav__icon nav__list"
+      aria-label={n ? `Mi lista, ${n} ${n === 1 ? 'producto' : 'productos'}` : 'Mi lista'}
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M6 4h12v16l-6-4-6 4z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+      {n > 0 && (
+        <span key={n} className="nav__badge" aria-hidden="true">
+          {n > 99 ? '99+' : n}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 const step = (i: number) => ({ '--i': i }) as CSSProperties;
 
@@ -51,6 +74,15 @@ export default function Nav() {
             ),
           )}
         </nav>
+        <div className="nav__tools">
+          <Link to="/catalogo?buscar" className="nav__icon" aria-label="Buscar en el catálogo">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M15.5 15.5L20 20" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </Link>
+          <ListLink />
+        </div>
         <ContactLink className="btn btn--sand btn--small nav__cta" message="Hola DIODI, quiero asesoría de iluminación.">
           Pedir asesoría
         </ContactLink>

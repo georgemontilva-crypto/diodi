@@ -12,7 +12,8 @@ app.use(
     index: false,
     setHeaders(res, file) {
       // Los archivos con hash de Vite se pueden cachear para siempre.
-      if (file.includes(`${path.sep}assets${path.sep}`)) {
+      // También las fotos del catálogo: su nombre cambia si cambia la foto.
+      if (file.includes(`${path.sep}assets${path.sep}`) || /[\\/]img[\\/][pc][\\/]/.test(file)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
         res.setHeader('Cache-Control', 'public, max-age=3600');

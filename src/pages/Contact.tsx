@@ -1,41 +1,17 @@
 import Locations from '../components/Locations';
-import { site } from '../config';
 import { delay, useTitle } from '../hooks';
 
+/** Nuestras tiendas: dirección, horario, WhatsApp y mapa de cada una. */
 export default function Contact() {
-  useTitle('Ubicaciones y contacto — DIODI LED');
+  useTitle('Nuestras tiendas — DIODI LED');
   return (
     <div className="contact">
       <div className="wrap">
-        <h1 data-reveal>Hablemos de tu espacio.</h1>
+        <h1 data-reveal>Nuestras tiendas.</h1>
         <p className="contact__lead" data-reveal style={delay(100)}>
-          Ven con un plano, unas fotos o solo la idea. Te ayudamos a elegir la luz para cada ambiente, por dentro y por fuera.
+          Ven a ver la luz en persona. Te asesoramos para elegir la iluminación de tu espacio o de tu proyecto: trae un plano,
+          unas fotos o solo la idea.
         </p>
-        {(site.whatsapp || site.instagram) && (
-          <div className="contact__actions">
-            {site.whatsapp && (
-              <a
-                className="btn btn--umber"
-                href={`https://wa.me/${site.whatsapp}?text=${encodeURIComponent('Hola DIODI, quiero asesoría de iluminación.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Escribir por WhatsApp
-              </a>
-            )}
-            {site.instagram && (
-              <a
-                className="btn btn--outline-umber"
-                href={`https://instagram.com/${site.instagram}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ver Instagram
-              </a>
-            )}
-          </div>
-        )}
-        <h2 data-reveal>Dónde estamos</h2>
         <Locations />
       </div>
     </div>

@@ -1,11 +1,11 @@
 import { useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { categories, products, type CategoryId } from '../data/catalog';
 import { delay, useLightWave, useTitle } from '../hooks';
 
 export default function Catalog() {
-  useTitle('Catálogo — DIODI LED');
+  useTitle('Colección 3D — DIODI LED');
   const root = useRef<HTMLDivElement>(null);
   useLightWave(root);
   const [params, setParams] = useSearchParams();
@@ -21,9 +21,13 @@ export default function Catalog() {
   return (
     <div className="catalog" ref={root}>
       <header className="wrap catalog__head">
-        <h1 data-reveal>Catálogo</h1>
+        <h1 data-reveal>Colección 3D</h1>
         <p data-reveal style={delay(90)}>
-          Cada pieza se puede girar, encender y probar en 3D.
+          Una selección de piezas para girar, encender y probar en 3D. El catálogo completo está en{' '}
+          <Link className="link" to="/catalogo">
+            Catálogo
+          </Link>
+          .
         </p>
         <div className="filters" role="group" aria-label="Filtrar por tipo" data-reveal style={delay(180)}>
           <button type="button" aria-pressed={!active} onClick={() => select(null)}>
@@ -53,7 +57,11 @@ export default function Catalog() {
           </section>
         ))}
         <p className="catalog__note" data-reveal>
-          ¿Buscas algo que no está aquí? Tenemos más piezas en Valencia y Caracas.
+          ¿Buscas algo que no está aquí? Hay más de 3.000 productos en el{' '}
+          <Link className="link" to="/catalogo">
+            catálogo completo
+          </Link>
+          .
         </p>
       </div>
     </div>

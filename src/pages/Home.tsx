@@ -8,6 +8,7 @@ import LambaScroll from '../components/LambaScroll';
 import ToneDemo from '../components/ToneDemo';
 import Rail from '../components/Rail';
 import Locations from '../components/Locations';
+import TodaLaTienda from '../components/TodaLaTienda';
 import ContactLink from '../components/ContactLink';
 import { featured } from '../data/catalog';
 import { delay, useMedia, useTitle } from '../hooks';
@@ -87,7 +88,9 @@ function Hero() {
             <br />
             se diseña.
           </h1>
-          <p>Luminarias para interiores y exteriores, y asesoría para elegir cada una. Estamos en Valencia y Caracas.</p>
+          <p>
+            Luminarias para interiores y exteriores, y asesoría para elegir cada una. Tiendas en Maracaibo, Valencia y Caracas.
+          </p>
           <div className="hero__actions">
             <Link className="btn btn--sand" to="/catalogo">
               Ver catálogo
@@ -137,8 +140,8 @@ export default function Home() {
       <section className="collection" aria-labelledby="coleccion-titulo">
         <div className="wrap collection__head" data-reveal>
           <h2 id="coleccion-titulo">Enciende cada pieza.</h2>
-          <Link className="link" to="/catalogo">
-            Ver todo el catálogo
+          <Link className="link" to="/coleccion">
+            Ver la colección 3D
           </Link>
         </div>
         <Rail items={featured} label="Productos destacados" />
@@ -165,6 +168,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <TodaLaTienda />
 
       <section className="advisory" id="asesoria" aria-labelledby="asesoria-titulo">
         <div className="wrap advisory__grid">

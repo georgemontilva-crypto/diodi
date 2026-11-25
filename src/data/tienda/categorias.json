@@ -1,0 +1,282 @@
+[
+ {
+  "slug": "decorativas",
+  "label": "Decorativas",
+  "parent": null,
+  "total": 526,
+  "img": "4dc33a7070f9",
+  "shown": 100
+ },
+ {
+  "slug": "interruptores",
+  "label": "Interruptores",
+  "parent": null,
+  "total": 326,
+  "img": "d9f1ced5edfc",
+  "shown": 100
+ },
+ {
+  "slug": "decorativas-colgantes",
+  "label": "Colgantes",
+  "parent": "decorativas",
+  "total": 301,
+  "img": "76d869744674",
+  "shown": 100
+ },
+ {
+  "slug": "lampara-focal",
+  "label": "Lámpara Focal",
+  "parent": null,
+  "total": 282,
+  "img": "eaeab036a4fc",
+  "shown": 100
+ },
+ {
+  "slug": "electrico-nacional",
+  "label": "Electrico Nacional",
+  "parent": null,
+  "total": 272,
+  "img": "5bb62b4890f0",
+  "shown": 100
+ },
+ {
+  "slug": "cintas",
+  "label": "Cintas",
+  "parent": null,
+  "total": 244,
+  "img": "931cb31dd4ff",
+  "shown": 100
+ },
+ {
+  "slug": "apliques",
+  "label": "Apliques",
+  "parent": null,
+  "total": 224,
+  "img": "a87ac8c0fd3c",
+  "shown": 100
+ },
+ {
+  "slug": "magnetico",
+  "label": "Magnético",
+  "parent": null,
+  "total": 214,
+  "img": "a899e93600f1",
+  "shown": 100
+ },
+ {
+  "slug": "paneles",
+  "label": "Paneles",
+  "parent": null,
+  "total": 156,
+  "img": "b1f88575a333",
+  "shown": 100
+ },
+ {
+  "slug": "industrial",
+  "label": "Industrial",
+  "parent": null,
+  "total": 150,
+  "img": "81322c30f42e",
+  "shown": 100
+ },
+ {
+  "slug": "decorativas-de-techo",
+  "label": "De Techo",
+  "parent": "decorativas",
+  "total": 101,
+  "img": "c17093904fe2",
+  "shown": 100
+ },
+ {
+  "slug": "lampara-lineal",
+  "label": "Lámpara Lineal",
+  "parent": null,
+  "total": 99,
+  "img": "8514579f9aaa",
+  "shown": 99
+ },
+ {
+  "slug": "bombillos",
+  "label": "Bombillos",
+  "parent": null,
+  "total": 76,
+  "img": "2ab00a159dc1",
+  "shown": 76
+ },
+ {
+  "slug": "dicroico",
+  "label": "Dicroico",
+  "parent": null,
+  "total": 71,
+  "img": "ac44c22e564c",
+  "shown": 71
+ },
+ {
+  "slug": "cables-nacional",
+  "label": "Cables Nacional",
+  "parent": null,
+  "total": 62,
+  "img": "ce362e7e2cf8",
+  "shown": 62
+ },
+ {
+  "slug": "domotica",
+  "label": "Domótica",
+  "parent": null,
+  "total": 60,
+  "img": "5e874639865b",
+  "shown": 60
+ },
+ {
+  "slug": "decorativas-geometricas",
+  "label": "Geometricas",
+  "parent": "decorativas",
+  "total": 59,
+  "img": "76618f579d4d",
+  "shown": 59
+ },
+ {
+  "slug": "tuberia-emt-conexiones-y-cajetines",
+  "label": "Tubería EMT, Conexiones y Cajetines",
+  "parent": null,
+  "total": 56,
+  "img": "9e9f7dfcf393",
+  "shown": 56
+ },
+ {
+  "slug": "componentes",
+  "label": "Componentes",
+  "parent": null,
+  "total": 48,
+  "img": "b65b788c70c6",
+  "shown": 48
+ },
+ {
+  "slug": "cintas-perfiles",
+  "label": "Perfiles",
+  "parent": "cintas",
+  "total": 45,
+  "img": "393eccacadf8",
+  "shown": 45
+ },
+ {
+  "slug": "componentes-drivers",
+  "label": "Drivers",
+  "parent": "componentes",
+  "total": 45,
+  "img": "b448f34a409c",
+  "shown": 45
+ },
+ {
+  "slug": "decorativas-de-mesa",
+  "label": "De Mesa",
+  "parent": "decorativas",
+  "total": 37,
+  "img": "f94878c9e12a",
+  "shown": 37
+ },
+ {
+  "slug": "breaker-nacional",
+  "label": "Breaker Nacional",
+  "parent": null,
+  "total": 31,
+  "img": "cbaf68f44a4e",
+  "shown": 31
+ },
+ {
+  "slug": "emergencia",
+  "label": "Emergencia",
+  "parent": null,
+  "total": 26,
+  "img": "45f31640a668",
+  "shown": 26
+ },
+ {
+  "slug": "solar",
+  "label": "Solar",
+  "parent": null,
+  "total": 25,
+  "img": "274a4f03fb76",
+  "shown": 25
+ },
+ {
+  "slug": "tubos",
+  "label": "Tubos",
+  "parent": null,
+  "total": 17,
+  "img": "274a4f03fb76",
+  "shown": 17
+ },
+ {
+  "slug": "difusores-de-aroma",
+  "label": "Difusores de Aroma",
+  "parent": null,
+  "total": 13,
+  "img": "7af160fa356f",
+  "shown": 13
+ },
+ {
+  "slug": "ventiladores",
+  "label": "Ventiladores",
+  "parent": null,
+  "total": 12,
+  "img": "a1af744adb07",
+  "shown": 12
+ },
+ {
+  "slug": "bombas-de-agua",
+  "label": "Bombas de Agua",
+  "parent": null,
+  "total": 11,
+  "img": "19ee3d008cb7",
+  "shown": 11
+ },
+ {
+  "slug": "decorativas-de-piso",
+  "label": "De Piso",
+  "parent": "decorativas",
+  "total": 11,
+  "img": "da547e95b4b0",
+  "shown": 11
+ },
+ {
+  "slug": "tornillo-y-ramplug-nacional",
+  "label": "Tornillo y Ramplug Nacional",
+  "parent": null,
+  "total": 9,
+  "img": "1cd6ef09fa50",
+  "shown": 9
+ },
+ {
+  "slug": "canaletas",
+  "label": "Canaletas",
+  "parent": null,
+  "total": 7,
+  "img": "1cd6ef09fa50",
+  "shown": 7
+ },
+ {
+  "slug": "laminas-decorativas",
+  "label": "Laminas Decorativas",
+  "parent": null,
+  "total": 5,
+  "img": "e23038feadaa",
+  "shown": 5
+ },
+ {
+  "slug": "tableros-electricos-nacional",
+  "label": "Tableros Electricos Nacional",
+  "parent": null,
+  "total": 4,
+  "img": "e23038feadaa",
+  "shown": 4
+ },
+ {
+  "slug": "wall-panel",
+  "label": "Wall Panel",
+  "parent": null,
+  "total": 2,
+  "img": null,
+  "shown": 2
+ }
+]
