@@ -3696,9 +3696,17 @@ html {
   border-radius: 8px;
   background: #fff;
   overflow: hidden;
-  box-shadow:
-    0 50px 130px -30px rgba(255, 177, 99, 0.6),
-    0 0 60px -10px rgba(255, 190, 130, 0.35);
+  z-index: 1;
+  box-shadow: 0 0 44px -8px rgba(255, 190, 130, 0.4);
+}
+
+/* Resplandor alrededor de la vitrina: un degradado, para que se apague sin borde. */
+.cathero__stage::after {
+  content: '';
+  position: absolute;
+  inset: -60% -60% -75%;
+  background: radial-gradient(closest-side, rgba(255, 177, 99, 0.36), rgba(255, 177, 99, 0.1) 55%, transparent);
+  pointer-events: none;
 }
 
 .cathero__plate img {
@@ -3717,6 +3725,11 @@ html {
     order: -1;
     justify-self: start;
     width: 132px;
+  }
+
+  /* La vitrina pequeña no deja sitio al haz: basta con su resplandor. */
+  .cathero__stage::before {
+    display: none;
   }
 }
 
